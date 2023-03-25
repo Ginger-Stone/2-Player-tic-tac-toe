@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tic Tac Toe</title>
+    <link rel="stylesheet" href="./css/style.css" />
+  </head>
+  <body>
+    <div id="home">
+      <div class="game-info">
+        <h1>Tic Tac Toe</h1>
+        <p>
+          Tic Tac Toe is a classic game that can be played by two players. The
+          game is played on a 3x3 grid, with each player taking turns placing
+          their symbol (usually X or O) in an empty space on the board. The goal
+          of the game is to get three of your symbols in a row, either
+          horizontally, vertically, or diagonally, before your opponent does.
+        </p>
+        <div id="game-rules">
+          <h3>How to play:</h3>
+          <ol>
+            <li>
+              The first player places their symbol in an empty space on the
+              board.
+            </li>
+            <li>
+              The second player then takes their turn and places their symbol in
+              an empty space on the board.
+            </li>
+            <li>
+              Players continue taking turns until one player gets three of their
+              symbols in a row, either horizontally, vertically, or diagonally.
+            </li>
+            <li>
+              If neither player has won and there are no more empty spaces on
+              the board, the game ends in a tie.
+            </li>
+          </ol>
+          <p>
+            I have made the game more challenging by increasing the size of the
+            board on different levels to require four or five in a row to win😊.
+            Have MAD fun🍻
+          </p>
+        </div>
+      </div>
+
+      <div id="users-list">
+        <h2>
+          Join Game
+          <span class="description"
+            >(Select <span class="status"></span>available player to start
+            game)</span
+          >
+        </h2>
+        <div id="players-online">
+          <!-- <div class="player" id="hajsjasjashj">
+            <h3><span>1</span>. Gina</h3>
+            <p class="state"><span class="status"></span>engaged</p>
+          </div> -->
+        </div>
+      </div>
+    </div>
+    <div class="game-play">
+      <div id="game-board">
+        <!-- <div class="game-block" id="0" onclick="playerMove(this.id)"></div> -->
+      </div>
+      <aside>
+        <div id="game-status">
+          <h2>Game Status</h2>
+          <div id="player-switching">
+            <span id="current-player">Gina</span>'s turn
+          </div>
+        </div>
+        <div id="chat">
+          <h2>Chat</h2>
+          <div id="chat-box">
+            <div class="chat-item">
+              <h6>Rico</h6>
+              <p>Heey G!! Im'ma beat you on this one</p>
+            </div>
+            <div class="chat-item">
+              <h6>Rico</h6>
+              <p>Heey G!! Im'ma beat you on this one</p>
+            </div>
+            <div class="chat-item">
+              <h6>Rico</h6>
+              <p>Heey G!! Im'ma beat you on this one</p>
+            </div>
+            <div class="chat-item">
+              <h6>Gina</h6>
+              <p>Brind it on bruh!</p>
+            </div>
+            <div class="chat-item">
+              <h6>Gina</h6>
+              <p>Brind it on bruh!</p>
+            </div>
+            <div class="chat-item">
+              <h6>Gina</h6>
+              <p>Brind it on bruh!</p>
+            </div>
+            <div class="chat-item">
+              <h6>Gina</h6>
+              <p>Brind it on bruh!</p>
+            </div>
+            <div class="chat-item">
+              <h6>Gina</h6>
+              <p>Brind it on bruh!</p>
+            </div>
+            <div class="chat-item">
+              <h6>Gina</h6>
+              <p>Brind it on bruh!</p>
+            </div>
+          </div>
+          <div id="send-message">
+            <form action="">
+              <div class="input">
+                <label for="message" hidden>Message:</label>
+                <textarea
+                  type="text"
+                  name=""
+                  id=""
+                  placeholder="Send message..."
+                ></textarea>
+              </div>
+              <button onclick="sendMessage()">send</button>
+            </form>
+          </div>
+        </div>
+      </aside>
+    </div>
+    <!-- JS scripts -->
+    <!-- Socket.IO client -->
+    <script src="./js/client-bundle.js"></script>
+    <script src="./js/script.js"></script>
+  </body>
+</html>

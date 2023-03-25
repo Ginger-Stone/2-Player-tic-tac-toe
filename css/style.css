@@ -1,0 +1,213 @@
+@import url("https://fonts.googleapis.com/css2?family=Odibee+Sans&family=Space+Grotesk:wght@300&display=swap");
+
+body {
+  font-family: "Odibee Sans", cursive;
+  font-family: "Space Grotesk", sans-serif;
+  /* font-size: 0.8em; */
+  /* letter-spacing: 2px; */
+}
+
+::-webkit-scrollbar {
+  width: 0.2em;
+}
+
+::-webkit-scrollbar-track {
+  box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.3);
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: darkgrey;
+  outline: 1px solid slategrey;
+}
+
+#home {
+  width: calc(100vw - 50px);
+  height: calc(100vh - 50px);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  overflow: hidden;
+}
+
+.description {
+  font-size: 0.8em;
+  text-transform: none;
+}
+
+.game-info {
+  width: 65%;
+  overflow-y: hidden;
+}
+
+#users-list {
+  width: 30%;
+  overflow-y: hidden;
+}
+#users-list h2 {
+  opacity: 1;
+  margin-bottom: 10px;
+}
+
+#players-online {
+  overflow-y: scroll;
+  height: 80vh;
+}
+
+.game-play {
+  display: flex;
+  justify-content: space-between;
+  /* align-items: center; */
+}
+#game-board {
+  width: 98vmin;
+  height: 98vmin;
+  display: flex;
+  flex-wrap: wrap;
+  /* border: 1px solid black; */
+}
+
+.game-block {
+  border: 1px solid black;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-family: sans-serif;
+  font-size: 5em;
+}
+
+.grid3X3 {
+  width: calc((100% / 3) - (2px));
+  height: calc((100% / 3) - (1px));
+}
+.grid4X4 {
+  width: calc((100% / 4) - (2px));
+  height: calc((100% / 4) - (1px));
+}
+.grid5X5 {
+  width: calc((100% / 5) - (2px));
+  height: calc((100% / 5) - (1px));
+}
+
+aside {
+  width: 98vmin;
+  height: 98vmin;
+}
+
+#game-status {
+  background-color: rgb(102, 47, 47);
+  margin: 0;
+  padding: 20px;
+  color: white;
+  height: calc(15% - 40px);
+}
+
+h2 {
+  text-transform: uppercase;
+  margin: 0;
+  font-size: 1.3em;
+  opacity: 0.5;
+}
+
+#player-switching {
+  font-size: 2.5em;
+}
+#chat {
+  background-color: #2a2929;
+  height: calc(85% - 40px);
+  color: white;
+  padding: 20px;
+  overflow-y: hidden;
+  display: grid;
+  grid-template-columns: (1fr);
+  grid-template-rows: (1fr 2fr 1fr);
+}
+
+#chat h2 {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+#chat-box {
+  overflow-y: scroll;
+  padding: 10px 0;
+  /* display: flex;
+  flex-wrap: wrap; */
+  /* height: 70%; */
+}
+.chat-item {
+  background-color: rgb(49, 68, 56);
+  border-radius: 20px;
+  padding: 10px;
+  width: calc(80% - 20px);
+  margin-bottom: 5px;
+}
+.chat-item:nth-child(odd) {
+  background-color: rgb(102, 47, 47);
+  margin-left: auto;
+}
+.chat-item h6 {
+  opacity: 0.5;
+  margin: 0;
+}
+.chat-item p {
+  margin: 0;
+  padding: 0;
+}
+#send-message {
+  padding: 10px 0;
+  width: 100%;
+}
+#send-message form {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 8fr 1fr;
+  grid-template-rows: 1fr;
+}
+#send-message form textarea,
+#send-message form button {
+  width: calc(100% - 10px);
+  height: 40px;
+  padding: 5px;
+  border: none;
+  outline: none;
+}
+#send-message form button {
+  height: 45px;
+}
+
+#players-online {
+  width: 100%;
+}
+
+#players-online .player {
+  width: calc(100% - 60px);
+  display: flex;
+  flex-wrap: wrap;
+  background-color: rgb(73, 129, 141);
+  color: white;
+  padding: 0 30px;
+  margin-bottom: 10px;
+}
+
+#players-online .player h3 {
+  display: inline-block;
+}
+
+#players-online .player p {
+  display: inline-block;
+  margin-left: auto;
+}
+
+.status {
+  display: inline-block;
+  width: 0.8em;
+  height: 0.8em;
+  vertical-align: middle;
+  margin-right: 10px;
+  border-radius: 50% 50%;
+  background-color: #adff2f;
+  /* background-color: rgb(247, 7, 7); */
+}
+.status-red {
+  background-color: rgb(247, 7, 7);
+}
