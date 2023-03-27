@@ -1,8 +1,9 @@
 @import url("https://fonts.googleapis.com/css2?family=Odibee+Sans&family=Space+Grotesk:wght@300&display=swap");
-
+/* TODO: Work on responsiveness and touch up on pages to achieve a slique look😊 */
 body {
   font-family: "Odibee Sans", cursive;
   font-family: "Space Grotesk", sans-serif;
+  overflow: hidden;
   /* font-size: 0.8em; */
   /* letter-spacing: 2px; */
 }
@@ -54,10 +55,19 @@ body {
   height: 80vh;
 }
 
-.game-play {
+#game-play {
   display: flex;
   justify-content: space-between;
+  position: absolute;
+  top: 0;
+  padding: 5px 0;
+  background-color: whitesmoke;
+  overflow: hidden;
+  visibility: hidden;
   /* align-items: center; */
+}
+.show {
+  visibility: visible !important;
 }
 #game-board {
   width: 98vmin;
@@ -141,7 +151,7 @@ h2 {
   width: calc(80% - 20px);
   margin-bottom: 5px;
 }
-.chat-item:nth-child(odd) {
+.chat-item.other-user {
   background-color: rgb(102, 47, 47);
   margin-left: auto;
 }

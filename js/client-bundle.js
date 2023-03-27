@@ -2206,66 +2206,1093 @@ process.umask = function() { return 0; };
 
 },{}],5:[function(require,module,exports){
 // REMEMBER to run -> browserify client.js -o client-bundle.js <- whenever changes are made to this file
-
 const io = require("socket.io-client");
+const { v4: uuidv4 } = require("uuid");
 
-const socket = io("http://127.0.0.1:3000");
-socket.on("connect", () => {
-  console.log("Socket connected:", socket.id);
-  const username = prompt("Please enter your username:");
+const playersOnline = document.getElementById("players-online");
 
-  // Emit the 'connect' event with the username
-  socket.emit("userConnect", { username: username });
+const setCurrentPlayer = document.getElementById("current-player");
+// let currentPlayer;
+const Symbols = {
+  player1: "X",
+  player2: "O",
+};
+
+// generate a unique identifier for the user
+const userId = uuidv4();
+
+// store the user ID in a cookie or local storage
+localStorage.setItem("userId", userId);
+
+const username = prompt("Please enter your username:");
+localStorage.setItem("username", username);
+
+// connect to the WebSocket server with the user ID
+const socket = io("http://127.0.0.1:3000", {
+  query: { userId: userId, username: username },
 });
 
-// Handle the 'userConnect' event from the server
-socket.on("userConnected", (clients) => {
+// Expose myFunction in the global scope - Makes the function inside the bundled js file accessible to HTML and other js scripts
+window.selectedUser = selectedUser;
+window.playerMove = playerMove;
+// window.sendMessage = sendMessage;
+
+function selectedUser(selectedUserId) {
+  console.log("selectedUserId:", selectedUserId);
+  // When a user clicks on another user to play with
+  socket.emit("selectUser", {
+    selectedUserId: selectedUserId,
+    meId: localStorage.getItem("userId"),
+  });
+}
+
+function addUser(client) {
+  console.log("client");
+  console.log(client.userId);
+  let index = 0;
+  const { username, engaged } = client;
+  const newPlayer = document.createElement("div");
+  newPlayer.id = client.userId;
+  newPlayer.setAttribute("onclick", "selectedUser(this.id)");
+  newPlayer.classList.add("player");
+  const h3 = document.createElement("h3");
+  const span = document.createElement("span");
+  span.innerText = ++index;
+  h3.appendChild(span);
+  const usernameNode = document.createTextNode(username);
+  h3.appendChild(usernameNode);
+  const p = document.createElement("p");
+  p.classList.add("state");
+  const span2 = document.createElement("span");
+  span2.classList.add(engaged ? "status-red" : "status");
+  const engagedNode = document.createTextNode(
+    engaged ? "engaged" : "available"
+  );
+  p.appendChild(span2);
+  p.appendChild(engagedNode);
+  newPlayer.appendChild(h3);
+  newPlayer.appendChild(p);
+  playersOnline.appendChild(newPlayer);
+}
+
+const connectHandler = () => {
+  console.log(`Socket connected: ${socket.id}`);
+  // const username = prompt("Please enter your username:");
+  socket.emit("userConnect");
+};
+
+const userConnectedHandler = ({ me, clients }) => {
+  const meId = localStorage.getItem("userId");
+  console.log("me - userConnect");
+  console.log(meId);
   console.log("clients - userConnect");
   console.log(clients);
-  let playersOnline = document.getElementById("players-online");
+
   playersOnline.innerHTML = "";
-  let index = 0;
-  for (let client in clients) {
-    console.log("client");
-    console.log(clients[client]?.userId);
-    client = clients[client];
-    let newPlayer = document.createElement("div");
-    newPlayer.id = client.userId;
-    newPlayer.classList.add("player");
-    // add client name and id
-    let h3 = document.createElement("h3");
-    let span = document.createElement("span");
-    span.innerText = ++index;
-    h3.appendChild(span);
-    let username = document.createTextNode(client.username);
-    h3.appendChild(username);
-    // add client status
-    let p = document.createElement("p");
-    p.classList.add("state");
-    let span2 = document.createElement("span2");
+  // Add the user who just joined to be the top on their list
+  addUser(clients[meId]);
+  for (const client of Object.values(clients)) {
+    console.log(client.userId, me.userId, client.userId === meId);
+    if (client.userId !== meId) {
+      addUser(client);
+    } else {
+      // TODO: add a card that shows the me user on top of the all users list
+      console.log(client.userId, me.userId, client.userId === meId);
+    }
+  }
+};
+
+function updateUserStatus(id) {
+  const selectedUser = document.getElementById(id);
+  if (selectedUser) {
+    const p = selectedUser.childNodes[1];
+    p.innerHTML = "";
+    const span2 = document.createElement("span");
     span2.classList.add("status");
-    let engaged = document.createTextNode(
-      client.engaged ? "engaged" : "available"
-    );
+    span2.classList.add("status-red");
+    const engagedNode = document.createTextNode("engaged");
     p.appendChild(span2);
-    p.appendChild(engaged);
-    newPlayer.appendChild(h3);
-    newPlayer.appendChild(p);
-    playersOnline.appendChild(newPlayer);
+    p.appendChild(engagedNode);
+  }
+}
+
+function playerMove(blockId) {
+  // send to server the move that has been made
+  const userId = setCurrentPlayer.dataset.userId;
+  const sender = localStorage.getItem("userId");
+  console.log(userId, sender);
+  if (userId === sender) socket.emit("playerMove", { sender, blockId });
+}
+
+function gameStart(me, selectedUser) {
+  // display game area with tic tac toe and chat box
+  const gameArea = document.getElementById("game-play");
+  console.log(gameArea);
+  gameArea.classList.add("show");
+  console.log(gameArea);
+
+  // Update the info to indicate the players. The two battling it out
+  const players = document.getElementById("players");
+  players.innerHTML = `${me.username} VS ${selectedUser.username}`;
+
+  // activate chat and allow them to communicate✔️
+
+  // select starting player
+  // currentPlayer = me;
+  socket.emit("currentPlayer", { playerId: me.userId });
+}
+
+const form = document.getElementById("send-message-form");
+
+form.addEventListener("submit", (event) => {
+  event.preventDefault(); // prevent default form submission behavior
+
+  // do something with the form data
+  const sender = localStorage.getItem("userId");
+  const message = form.elements["message"].value;
+  socket.emit("privateMessage", { sender, message });
+});
+
+// Handle the response from the server
+const selectUserResponseHandler = (response) => {
+  if (response.success) {
+    // The user was successfully engaged, handle accordingly
+    console.log(response);
+    updateUserStatus(response.selectedUser.userId);
+    updateUserStatus(response.me.userId);
+    gameStart(response.me, response.selectedUser);
+  } else {
+    // The user was already engaged, display an error message to the user
+    // TODO: have some text that appears for a few seconds below the player name and status stating the user is engaged
+  }
+};
+
+const playerMoveHandler = ({ senderName, senderId, playerNumber, blockId }) => {
+  console.log(localStorage.getItem.userId);
+  document.getElementById(blockId).innerText =
+    playerNumber === 1 ? Symbols.player1 : Symbols.player2;
+  blockId = Number(blockId);
+  let divider = Math.floor(blockId / gridSize);
+  let col = blockId - gridSize * divider;
+  let row = Math.floor(blockId / gridSize);
+  //   console.log(`row: ${row}, col: ${col}`);
+
+  //   if the spot in array is blank add X or O then scwitch player
+  if (BoardArray[row][col] === "") {
+    BoardArray[row][col] =
+      playerNumber === 1 ? Symbols.player1 : Symbols.player2;
+    // TODO: switch player
+    let playerId = localStorage.getItem("userId");
+    let currentPlayer = setCurrentPlayer.dataset.userId;
+    console.log(playerId, currentPlayer, localStorage.getItem("username"));
+    if (playerId !== currentPlayer) {
+      socket.emit("currentPlayer", { playerId });
+    }
+  }
+};
+
+const currentPlayerHandler = ({ playerId, playerUsername }) => {
+  setCurrentPlayer.innerHTML = playerUsername;
+  setCurrentPlayer.dataset.userId = playerId;
+};
+
+const privateMessageHandler = ({ senderName, senderId, message }) => {
+  // console.log(`Message from ${sender}: ${message}`);
+  const meId = localStorage.getItem("userId");
+  const chatBox = document.getElementById("chat-box");
+  const chatItem = document.createElement("div");
+  chatItem.classList.add("chat-item");
+  senderId !== meId && chatItem.classList.add("other-user");
+  const h6 = document.createElement("h6");
+  h6.innerText = senderName;
+  const p = document.createElement("p");
+  p.innerText = message;
+  chatItem.appendChild(h6);
+  chatItem.appendChild(p);
+  chatBox.appendChild(chatItem);
+};
+
+const connectedHandler = (data) => {
+  console.log(data);
+};
+
+const disconnectedHandler = (data) => {
+  console.log(`${data.username} (${data.userId}) disconnected`);
+};
+
+socket.on("connect", connectHandler);
+socket.on("userConnected", userConnectedHandler);
+socket.on("selectUserResponse", selectUserResponseHandler);
+socket.on("privateMessage", privateMessageHandler);
+socket.on("playerMove", playerMoveHandler);
+socket.on("currentPlayer", currentPlayerHandler);
+socket.on("connected", connectedHandler);
+socket.on("disconnected", disconnectedHandler);
+
+},{"socket.io-client":46,"uuid":6}],6:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+Object.defineProperty(exports, "NIL", {
+  enumerable: true,
+  get: function () {
+    return _nil.default;
+  }
+});
+Object.defineProperty(exports, "parse", {
+  enumerable: true,
+  get: function () {
+    return _parse.default;
+  }
+});
+Object.defineProperty(exports, "stringify", {
+  enumerable: true,
+  get: function () {
+    return _stringify.default;
+  }
+});
+Object.defineProperty(exports, "v1", {
+  enumerable: true,
+  get: function () {
+    return _v.default;
+  }
+});
+Object.defineProperty(exports, "v3", {
+  enumerable: true,
+  get: function () {
+    return _v2.default;
+  }
+});
+Object.defineProperty(exports, "v4", {
+  enumerable: true,
+  get: function () {
+    return _v3.default;
+  }
+});
+Object.defineProperty(exports, "v5", {
+  enumerable: true,
+  get: function () {
+    return _v4.default;
+  }
+});
+Object.defineProperty(exports, "validate", {
+  enumerable: true,
+  get: function () {
+    return _validate.default;
+  }
+});
+Object.defineProperty(exports, "version", {
+  enumerable: true,
+  get: function () {
+    return _version.default;
   }
 });
 
-// Handle the 'connected' event from the server
-socket.on("connected", (data) => {
-  console.log(data);
-});
+var _v = _interopRequireDefault(require("./v1.js"));
 
-// Handle the 'disconnected' event from the server
-socket.on("disconnected", (data) => {
-  console.log(`${data.username} (${data.userId}) disconnected`);
-});
+var _v2 = _interopRequireDefault(require("./v3.js"));
 
-},{"socket.io-client":30}],6:[function(require,module,exports){
+var _v3 = _interopRequireDefault(require("./v4.js"));
+
+var _v4 = _interopRequireDefault(require("./v5.js"));
+
+var _nil = _interopRequireDefault(require("./nil.js"));
+
+var _version = _interopRequireDefault(require("./version.js"));
+
+var _validate = _interopRequireDefault(require("./validate.js"));
+
+var _stringify = _interopRequireDefault(require("./stringify.js"));
+
+var _parse = _interopRequireDefault(require("./parse.js"));
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+},{"./nil.js":9,"./parse.js":10,"./stringify.js":14,"./v1.js":15,"./v3.js":16,"./v4.js":18,"./v5.js":19,"./validate.js":20,"./version.js":21}],7:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+
+/*
+ * Browser-compatible JavaScript MD5
+ *
+ * Modification of JavaScript MD5
+ * https://github.com/blueimp/JavaScript-MD5
+ *
+ * Copyright 2011, Sebastian Tschan
+ * https://blueimp.net
+ *
+ * Licensed under the MIT license:
+ * https://opensource.org/licenses/MIT
+ *
+ * Based on
+ * A JavaScript implementation of the RSA Data Security, Inc. MD5 Message
+ * Digest Algorithm, as defined in RFC 1321.
+ * Version 2.2 Copyright (C) Paul Johnston 1999 - 2009
+ * Other contributors: Greg Holt, Andrew Kepert, Ydnar, Lostinet
+ * Distributed under the BSD License
+ * See http://pajhome.org.uk/crypt/md5 for more info.
+ */
+function md5(bytes) {
+  if (typeof bytes === 'string') {
+    const msg = unescape(encodeURIComponent(bytes)); // UTF8 escape
+
+    bytes = new Uint8Array(msg.length);
+
+    for (let i = 0; i < msg.length; ++i) {
+      bytes[i] = msg.charCodeAt(i);
+    }
+  }
+
+  return md5ToHexEncodedArray(wordsToMd5(bytesToWords(bytes), bytes.length * 8));
+}
+/*
+ * Convert an array of little-endian words to an array of bytes
+ */
+
+
+function md5ToHexEncodedArray(input) {
+  const output = [];
+  const length32 = input.length * 32;
+  const hexTab = '0123456789abcdef';
+
+  for (let i = 0; i < length32; i += 8) {
+    const x = input[i >> 5] >>> i % 32 & 0xff;
+    const hex = parseInt(hexTab.charAt(x >>> 4 & 0x0f) + hexTab.charAt(x & 0x0f), 16);
+    output.push(hex);
+  }
+
+  return output;
+}
+/**
+ * Calculate output length with padding and bit length
+ */
+
+
+function getOutputLength(inputLength8) {
+  return (inputLength8 + 64 >>> 9 << 4) + 14 + 1;
+}
+/*
+ * Calculate the MD5 of an array of little-endian words, and a bit length.
+ */
+
+
+function wordsToMd5(x, len) {
+  /* append padding */
+  x[len >> 5] |= 0x80 << len % 32;
+  x[getOutputLength(len) - 1] = len;
+  let a = 1732584193;
+  let b = -271733879;
+  let c = -1732584194;
+  let d = 271733878;
+
+  for (let i = 0; i < x.length; i += 16) {
+    const olda = a;
+    const oldb = b;
+    const oldc = c;
+    const oldd = d;
+    a = md5ff(a, b, c, d, x[i], 7, -680876936);
+    d = md5ff(d, a, b, c, x[i + 1], 12, -389564586);
+    c = md5ff(c, d, a, b, x[i + 2], 17, 606105819);
+    b = md5ff(b, c, d, a, x[i + 3], 22, -1044525330);
+    a = md5ff(a, b, c, d, x[i + 4], 7, -176418897);
+    d = md5ff(d, a, b, c, x[i + 5], 12, 1200080426);
+    c = md5ff(c, d, a, b, x[i + 6], 17, -1473231341);
+    b = md5ff(b, c, d, a, x[i + 7], 22, -45705983);
+    a = md5ff(a, b, c, d, x[i + 8], 7, 1770035416);
+    d = md5ff(d, a, b, c, x[i + 9], 12, -1958414417);
+    c = md5ff(c, d, a, b, x[i + 10], 17, -42063);
+    b = md5ff(b, c, d, a, x[i + 11], 22, -1990404162);
+    a = md5ff(a, b, c, d, x[i + 12], 7, 1804603682);
+    d = md5ff(d, a, b, c, x[i + 13], 12, -40341101);
+    c = md5ff(c, d, a, b, x[i + 14], 17, -1502002290);
+    b = md5ff(b, c, d, a, x[i + 15], 22, 1236535329);
+    a = md5gg(a, b, c, d, x[i + 1], 5, -165796510);
+    d = md5gg(d, a, b, c, x[i + 6], 9, -1069501632);
+    c = md5gg(c, d, a, b, x[i + 11], 14, 643717713);
+    b = md5gg(b, c, d, a, x[i], 20, -373897302);
+    a = md5gg(a, b, c, d, x[i + 5], 5, -701558691);
+    d = md5gg(d, a, b, c, x[i + 10], 9, 38016083);
+    c = md5gg(c, d, a, b, x[i + 15], 14, -660478335);
+    b = md5gg(b, c, d, a, x[i + 4], 20, -405537848);
+    a = md5gg(a, b, c, d, x[i + 9], 5, 568446438);
+    d = md5gg(d, a, b, c, x[i + 14], 9, -1019803690);
+    c = md5gg(c, d, a, b, x[i + 3], 14, -187363961);
+    b = md5gg(b, c, d, a, x[i + 8], 20, 1163531501);
+    a = md5gg(a, b, c, d, x[i + 13], 5, -1444681467);
+    d = md5gg(d, a, b, c, x[i + 2], 9, -51403784);
+    c = md5gg(c, d, a, b, x[i + 7], 14, 1735328473);
+    b = md5gg(b, c, d, a, x[i + 12], 20, -1926607734);
+    a = md5hh(a, b, c, d, x[i + 5], 4, -378558);
+    d = md5hh(d, a, b, c, x[i + 8], 11, -2022574463);
+    c = md5hh(c, d, a, b, x[i + 11], 16, 1839030562);
+    b = md5hh(b, c, d, a, x[i + 14], 23, -35309556);
+    a = md5hh(a, b, c, d, x[i + 1], 4, -1530992060);
+    d = md5hh(d, a, b, c, x[i + 4], 11, 1272893353);
+    c = md5hh(c, d, a, b, x[i + 7], 16, -155497632);
+    b = md5hh(b, c, d, a, x[i + 10], 23, -1094730640);
+    a = md5hh(a, b, c, d, x[i + 13], 4, 681279174);
+    d = md5hh(d, a, b, c, x[i], 11, -358537222);
+    c = md5hh(c, d, a, b, x[i + 3], 16, -722521979);
+    b = md5hh(b, c, d, a, x[i + 6], 23, 76029189);
+    a = md5hh(a, b, c, d, x[i + 9], 4, -640364487);
+    d = md5hh(d, a, b, c, x[i + 12], 11, -421815835);
+    c = md5hh(c, d, a, b, x[i + 15], 16, 530742520);
+    b = md5hh(b, c, d, a, x[i + 2], 23, -995338651);
+    a = md5ii(a, b, c, d, x[i], 6, -198630844);
+    d = md5ii(d, a, b, c, x[i + 7], 10, 1126891415);
+    c = md5ii(c, d, a, b, x[i + 14], 15, -1416354905);
+    b = md5ii(b, c, d, a, x[i + 5], 21, -57434055);
+    a = md5ii(a, b, c, d, x[i + 12], 6, 1700485571);
+    d = md5ii(d, a, b, c, x[i + 3], 10, -1894986606);
+    c = md5ii(c, d, a, b, x[i + 10], 15, -1051523);
+    b = md5ii(b, c, d, a, x[i + 1], 21, -2054922799);
+    a = md5ii(a, b, c, d, x[i + 8], 6, 1873313359);
+    d = md5ii(d, a, b, c, x[i + 15], 10, -30611744);
+    c = md5ii(c, d, a, b, x[i + 6], 15, -1560198380);
+    b = md5ii(b, c, d, a, x[i + 13], 21, 1309151649);
+    a = md5ii(a, b, c, d, x[i + 4], 6, -145523070);
+    d = md5ii(d, a, b, c, x[i + 11], 10, -1120210379);
+    c = md5ii(c, d, a, b, x[i + 2], 15, 718787259);
+    b = md5ii(b, c, d, a, x[i + 9], 21, -343485551);
+    a = safeAdd(a, olda);
+    b = safeAdd(b, oldb);
+    c = safeAdd(c, oldc);
+    d = safeAdd(d, oldd);
+  }
+
+  return [a, b, c, d];
+}
+/*
+ * Convert an array bytes to an array of little-endian words
+ * Characters >255 have their high-byte silently ignored.
+ */
+
+
+function bytesToWords(input) {
+  if (input.length === 0) {
+    return [];
+  }
+
+  const length8 = input.length * 8;
+  const output = new Uint32Array(getOutputLength(length8));
+
+  for (let i = 0; i < length8; i += 8) {
+    output[i >> 5] |= (input[i / 8] & 0xff) << i % 32;
+  }
+
+  return output;
+}
+/*
+ * Add integers, wrapping at 2^32. This uses 16-bit operations internally
+ * to work around bugs in some JS interpreters.
+ */
+
+
+function safeAdd(x, y) {
+  const lsw = (x & 0xffff) + (y & 0xffff);
+  const msw = (x >> 16) + (y >> 16) + (lsw >> 16);
+  return msw << 16 | lsw & 0xffff;
+}
+/*
+ * Bitwise rotate a 32-bit number to the left.
+ */
+
+
+function bitRotateLeft(num, cnt) {
+  return num << cnt | num >>> 32 - cnt;
+}
+/*
+ * These functions implement the four basic operations the algorithm uses.
+ */
+
+
+function md5cmn(q, a, b, x, s, t) {
+  return safeAdd(bitRotateLeft(safeAdd(safeAdd(a, q), safeAdd(x, t)), s), b);
+}
+
+function md5ff(a, b, c, d, x, s, t) {
+  return md5cmn(b & c | ~b & d, a, b, x, s, t);
+}
+
+function md5gg(a, b, c, d, x, s, t) {
+  return md5cmn(b & d | c & ~d, a, b, x, s, t);
+}
+
+function md5hh(a, b, c, d, x, s, t) {
+  return md5cmn(b ^ c ^ d, a, b, x, s, t);
+}
+
+function md5ii(a, b, c, d, x, s, t) {
+  return md5cmn(c ^ (b | ~d), a, b, x, s, t);
+}
+
+var _default = md5;
+exports.default = _default;
+},{}],8:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+const randomUUID = typeof crypto !== 'undefined' && crypto.randomUUID && crypto.randomUUID.bind(crypto);
+var _default = {
+  randomUUID
+};
+exports.default = _default;
+},{}],9:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+var _default = '00000000-0000-0000-0000-000000000000';
+exports.default = _default;
+},{}],10:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+
+var _validate = _interopRequireDefault(require("./validate.js"));
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function parse(uuid) {
+  if (!(0, _validate.default)(uuid)) {
+    throw TypeError('Invalid UUID');
+  }
+
+  let v;
+  const arr = new Uint8Array(16); // Parse ########-....-....-....-............
+
+  arr[0] = (v = parseInt(uuid.slice(0, 8), 16)) >>> 24;
+  arr[1] = v >>> 16 & 0xff;
+  arr[2] = v >>> 8 & 0xff;
+  arr[3] = v & 0xff; // Parse ........-####-....-....-............
+
+  arr[4] = (v = parseInt(uuid.slice(9, 13), 16)) >>> 8;
+  arr[5] = v & 0xff; // Parse ........-....-####-....-............
+
+  arr[6] = (v = parseInt(uuid.slice(14, 18), 16)) >>> 8;
+  arr[7] = v & 0xff; // Parse ........-....-....-####-............
+
+  arr[8] = (v = parseInt(uuid.slice(19, 23), 16)) >>> 8;
+  arr[9] = v & 0xff; // Parse ........-....-....-....-############
+  // (Use "/" to avoid 32-bit truncation when bit-shifting high-order bytes)
+
+  arr[10] = (v = parseInt(uuid.slice(24, 36), 16)) / 0x10000000000 & 0xff;
+  arr[11] = v / 0x100000000 & 0xff;
+  arr[12] = v >>> 24 & 0xff;
+  arr[13] = v >>> 16 & 0xff;
+  arr[14] = v >>> 8 & 0xff;
+  arr[15] = v & 0xff;
+  return arr;
+}
+
+var _default = parse;
+exports.default = _default;
+},{"./validate.js":20}],11:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+var _default = /^(?:[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}|00000000-0000-0000-0000-000000000000)$/i;
+exports.default = _default;
+},{}],12:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = rng;
+// Unique ID creation requires a high quality random # generator. In the browser we therefore
+// require the crypto API and do not support built-in fallback to lower quality random number
+// generators (like Math.random()).
+let getRandomValues;
+const rnds8 = new Uint8Array(16);
+
+function rng() {
+  // lazy load so that environments that need to polyfill have a chance to do so
+  if (!getRandomValues) {
+    // getRandomValues needs to be invoked in a context where "this" is a Crypto implementation.
+    getRandomValues = typeof crypto !== 'undefined' && crypto.getRandomValues && crypto.getRandomValues.bind(crypto);
+
+    if (!getRandomValues) {
+      throw new Error('crypto.getRandomValues() not supported. See https://github.com/uuidjs/uuid#getrandomvalues-not-supported');
+    }
+  }
+
+  return getRandomValues(rnds8);
+}
+},{}],13:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+
+// Adapted from Chris Veness' SHA1 code at
+// http://www.movable-type.co.uk/scripts/sha1.html
+function f(s, x, y, z) {
+  switch (s) {
+    case 0:
+      return x & y ^ ~x & z;
+
+    case 1:
+      return x ^ y ^ z;
+
+    case 2:
+      return x & y ^ x & z ^ y & z;
+
+    case 3:
+      return x ^ y ^ z;
+  }
+}
+
+function ROTL(x, n) {
+  return x << n | x >>> 32 - n;
+}
+
+function sha1(bytes) {
+  const K = [0x5a827999, 0x6ed9eba1, 0x8f1bbcdc, 0xca62c1d6];
+  const H = [0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476, 0xc3d2e1f0];
+
+  if (typeof bytes === 'string') {
+    const msg = unescape(encodeURIComponent(bytes)); // UTF8 escape
+
+    bytes = [];
+
+    for (let i = 0; i < msg.length; ++i) {
+      bytes.push(msg.charCodeAt(i));
+    }
+  } else if (!Array.isArray(bytes)) {
+    // Convert Array-like to Array
+    bytes = Array.prototype.slice.call(bytes);
+  }
+
+  bytes.push(0x80);
+  const l = bytes.length / 4 + 2;
+  const N = Math.ceil(l / 16);
+  const M = new Array(N);
+
+  for (let i = 0; i < N; ++i) {
+    const arr = new Uint32Array(16);
+
+    for (let j = 0; j < 16; ++j) {
+      arr[j] = bytes[i * 64 + j * 4] << 24 | bytes[i * 64 + j * 4 + 1] << 16 | bytes[i * 64 + j * 4 + 2] << 8 | bytes[i * 64 + j * 4 + 3];
+    }
+
+    M[i] = arr;
+  }
+
+  M[N - 1][14] = (bytes.length - 1) * 8 / Math.pow(2, 32);
+  M[N - 1][14] = Math.floor(M[N - 1][14]);
+  M[N - 1][15] = (bytes.length - 1) * 8 & 0xffffffff;
+
+  for (let i = 0; i < N; ++i) {
+    const W = new Uint32Array(80);
+
+    for (let t = 0; t < 16; ++t) {
+      W[t] = M[i][t];
+    }
+
+    for (let t = 16; t < 80; ++t) {
+      W[t] = ROTL(W[t - 3] ^ W[t - 8] ^ W[t - 14] ^ W[t - 16], 1);
+    }
+
+    let a = H[0];
+    let b = H[1];
+    let c = H[2];
+    let d = H[3];
+    let e = H[4];
+
+    for (let t = 0; t < 80; ++t) {
+      const s = Math.floor(t / 20);
+      const T = ROTL(a, 5) + f(s, b, c, d) + e + K[s] + W[t] >>> 0;
+      e = d;
+      d = c;
+      c = ROTL(b, 30) >>> 0;
+      b = a;
+      a = T;
+    }
+
+    H[0] = H[0] + a >>> 0;
+    H[1] = H[1] + b >>> 0;
+    H[2] = H[2] + c >>> 0;
+    H[3] = H[3] + d >>> 0;
+    H[4] = H[4] + e >>> 0;
+  }
+
+  return [H[0] >> 24 & 0xff, H[0] >> 16 & 0xff, H[0] >> 8 & 0xff, H[0] & 0xff, H[1] >> 24 & 0xff, H[1] >> 16 & 0xff, H[1] >> 8 & 0xff, H[1] & 0xff, H[2] >> 24 & 0xff, H[2] >> 16 & 0xff, H[2] >> 8 & 0xff, H[2] & 0xff, H[3] >> 24 & 0xff, H[3] >> 16 & 0xff, H[3] >> 8 & 0xff, H[3] & 0xff, H[4] >> 24 & 0xff, H[4] >> 16 & 0xff, H[4] >> 8 & 0xff, H[4] & 0xff];
+}
+
+var _default = sha1;
+exports.default = _default;
+},{}],14:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+exports.unsafeStringify = unsafeStringify;
+
+var _validate = _interopRequireDefault(require("./validate.js"));
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+/**
+ * Convert array of 16 byte values to UUID string format of the form:
+ * XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
+ */
+const byteToHex = [];
+
+for (let i = 0; i < 256; ++i) {
+  byteToHex.push((i + 0x100).toString(16).slice(1));
+}
+
+function unsafeStringify(arr, offset = 0) {
+  // Note: Be careful editing this code!  It's been tuned for performance
+  // and works in ways you may not expect. See https://github.com/uuidjs/uuid/pull/434
+  return (byteToHex[arr[offset + 0]] + byteToHex[arr[offset + 1]] + byteToHex[arr[offset + 2]] + byteToHex[arr[offset + 3]] + '-' + byteToHex[arr[offset + 4]] + byteToHex[arr[offset + 5]] + '-' + byteToHex[arr[offset + 6]] + byteToHex[arr[offset + 7]] + '-' + byteToHex[arr[offset + 8]] + byteToHex[arr[offset + 9]] + '-' + byteToHex[arr[offset + 10]] + byteToHex[arr[offset + 11]] + byteToHex[arr[offset + 12]] + byteToHex[arr[offset + 13]] + byteToHex[arr[offset + 14]] + byteToHex[arr[offset + 15]]).toLowerCase();
+}
+
+function stringify(arr, offset = 0) {
+  const uuid = unsafeStringify(arr, offset); // Consistency check for valid UUID.  If this throws, it's likely due to one
+  // of the following:
+  // - One or more input array values don't map to a hex octet (leading to
+  // "undefined" in the uuid)
+  // - Invalid input values for the RFC `version` or `variant` fields
+
+  if (!(0, _validate.default)(uuid)) {
+    throw TypeError('Stringified UUID is invalid');
+  }
+
+  return uuid;
+}
+
+var _default = stringify;
+exports.default = _default;
+},{"./validate.js":20}],15:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+
+var _rng = _interopRequireDefault(require("./rng.js"));
+
+var _stringify = require("./stringify.js");
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+// **`v1()` - Generate time-based UUID**
+//
+// Inspired by https://github.com/LiosK/UUID.js
+// and http://docs.python.org/library/uuid.html
+let _nodeId;
+
+let _clockseq; // Previous uuid creation time
+
+
+let _lastMSecs = 0;
+let _lastNSecs = 0; // See https://github.com/uuidjs/uuid for API details
+
+function v1(options, buf, offset) {
+  let i = buf && offset || 0;
+  const b = buf || new Array(16);
+  options = options || {};
+  let node = options.node || _nodeId;
+  let clockseq = options.clockseq !== undefined ? options.clockseq : _clockseq; // node and clockseq need to be initialized to random values if they're not
+  // specified.  We do this lazily to minimize issues related to insufficient
+  // system entropy.  See #189
+
+  if (node == null || clockseq == null) {
+    const seedBytes = options.random || (options.rng || _rng.default)();
+
+    if (node == null) {
+      // Per 4.5, create and 48-bit node id, (47 random bits + multicast bit = 1)
+      node = _nodeId = [seedBytes[0] | 0x01, seedBytes[1], seedBytes[2], seedBytes[3], seedBytes[4], seedBytes[5]];
+    }
+
+    if (clockseq == null) {
+      // Per 4.2.2, randomize (14 bit) clockseq
+      clockseq = _clockseq = (seedBytes[6] << 8 | seedBytes[7]) & 0x3fff;
+    }
+  } // UUID timestamps are 100 nano-second units since the Gregorian epoch,
+  // (1582-10-15 00:00).  JSNumbers aren't precise enough for this, so
+  // time is handled internally as 'msecs' (integer milliseconds) and 'nsecs'
+  // (100-nanoseconds offset from msecs) since unix epoch, 1970-01-01 00:00.
+
+
+  let msecs = options.msecs !== undefined ? options.msecs : Date.now(); // Per 4.2.1.2, use count of uuid's generated during the current clock
+  // cycle to simulate higher resolution clock
+
+  let nsecs = options.nsecs !== undefined ? options.nsecs : _lastNSecs + 1; // Time since last uuid creation (in msecs)
+
+  const dt = msecs - _lastMSecs + (nsecs - _lastNSecs) / 10000; // Per 4.2.1.2, Bump clockseq on clock regression
+
+  if (dt < 0 && options.clockseq === undefined) {
+    clockseq = clockseq + 1 & 0x3fff;
+  } // Reset nsecs if clock regresses (new clockseq) or we've moved onto a new
+  // time interval
+
+
+  if ((dt < 0 || msecs > _lastMSecs) && options.nsecs === undefined) {
+    nsecs = 0;
+  } // Per 4.2.1.2 Throw error if too many uuids are requested
+
+
+  if (nsecs >= 10000) {
+    throw new Error("uuid.v1(): Can't create more than 10M uuids/sec");
+  }
+
+  _lastMSecs = msecs;
+  _lastNSecs = nsecs;
+  _clockseq = clockseq; // Per 4.1.4 - Convert from unix epoch to Gregorian epoch
+
+  msecs += 12219292800000; // `time_low`
+
+  const tl = ((msecs & 0xfffffff) * 10000 + nsecs) % 0x100000000;
+  b[i++] = tl >>> 24 & 0xff;
+  b[i++] = tl >>> 16 & 0xff;
+  b[i++] = tl >>> 8 & 0xff;
+  b[i++] = tl & 0xff; // `time_mid`
+
+  const tmh = msecs / 0x100000000 * 10000 & 0xfffffff;
+  b[i++] = tmh >>> 8 & 0xff;
+  b[i++] = tmh & 0xff; // `time_high_and_version`
+
+  b[i++] = tmh >>> 24 & 0xf | 0x10; // include version
+
+  b[i++] = tmh >>> 16 & 0xff; // `clock_seq_hi_and_reserved` (Per 4.2.2 - include variant)
+
+  b[i++] = clockseq >>> 8 | 0x80; // `clock_seq_low`
+
+  b[i++] = clockseq & 0xff; // `node`
+
+  for (let n = 0; n < 6; ++n) {
+    b[i + n] = node[n];
+  }
+
+  return buf || (0, _stringify.unsafeStringify)(b);
+}
+
+var _default = v1;
+exports.default = _default;
+},{"./rng.js":12,"./stringify.js":14}],16:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+
+var _v = _interopRequireDefault(require("./v35.js"));
+
+var _md = _interopRequireDefault(require("./md5.js"));
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+const v3 = (0, _v.default)('v3', 0x30, _md.default);
+var _default = v3;
+exports.default = _default;
+},{"./md5.js":7,"./v35.js":17}],17:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.URL = exports.DNS = void 0;
+exports.default = v35;
+
+var _stringify = require("./stringify.js");
+
+var _parse = _interopRequireDefault(require("./parse.js"));
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function stringToBytes(str) {
+  str = unescape(encodeURIComponent(str)); // UTF8 escape
+
+  const bytes = [];
+
+  for (let i = 0; i < str.length; ++i) {
+    bytes.push(str.charCodeAt(i));
+  }
+
+  return bytes;
+}
+
+const DNS = '6ba7b810-9dad-11d1-80b4-00c04fd430c8';
+exports.DNS = DNS;
+const URL = '6ba7b811-9dad-11d1-80b4-00c04fd430c8';
+exports.URL = URL;
+
+function v35(name, version, hashfunc) {
+  function generateUUID(value, namespace, buf, offset) {
+    var _namespace;
+
+    if (typeof value === 'string') {
+      value = stringToBytes(value);
+    }
+
+    if (typeof namespace === 'string') {
+      namespace = (0, _parse.default)(namespace);
+    }
+
+    if (((_namespace = namespace) === null || _namespace === void 0 ? void 0 : _namespace.length) !== 16) {
+      throw TypeError('Namespace must be array-like (16 iterable integer values, 0-255)');
+    } // Compute hash of namespace and value, Per 4.3
+    // Future: Use spread syntax when supported on all platforms, e.g. `bytes =
+    // hashfunc([...namespace, ... value])`
+
+
+    let bytes = new Uint8Array(16 + value.length);
+    bytes.set(namespace);
+    bytes.set(value, namespace.length);
+    bytes = hashfunc(bytes);
+    bytes[6] = bytes[6] & 0x0f | version;
+    bytes[8] = bytes[8] & 0x3f | 0x80;
+
+    if (buf) {
+      offset = offset || 0;
+
+      for (let i = 0; i < 16; ++i) {
+        buf[offset + i] = bytes[i];
+      }
+
+      return buf;
+    }
+
+    return (0, _stringify.unsafeStringify)(bytes);
+  } // Function#name is not settable on some platforms (#270)
+
+
+  try {
+    generateUUID.name = name; // eslint-disable-next-line no-empty
+  } catch (err) {} // For CommonJS default export support
+
+
+  generateUUID.DNS = DNS;
+  generateUUID.URL = URL;
+  return generateUUID;
+}
+},{"./parse.js":10,"./stringify.js":14}],18:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+
+var _native = _interopRequireDefault(require("./native.js"));
+
+var _rng = _interopRequireDefault(require("./rng.js"));
+
+var _stringify = require("./stringify.js");
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function v4(options, buf, offset) {
+  if (_native.default.randomUUID && !buf && !options) {
+    return _native.default.randomUUID();
+  }
+
+  options = options || {};
+
+  const rnds = options.random || (options.rng || _rng.default)(); // Per 4.4, set bits for version and `clock_seq_hi_and_reserved`
+
+
+  rnds[6] = rnds[6] & 0x0f | 0x40;
+  rnds[8] = rnds[8] & 0x3f | 0x80; // Copy bytes to buffer, if provided
+
+  if (buf) {
+    offset = offset || 0;
+
+    for (let i = 0; i < 16; ++i) {
+      buf[offset + i] = rnds[i];
+    }
+
+    return buf;
+  }
+
+  return (0, _stringify.unsafeStringify)(rnds);
+}
+
+var _default = v4;
+exports.default = _default;
+},{"./native.js":8,"./rng.js":12,"./stringify.js":14}],19:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+
+var _v = _interopRequireDefault(require("./v35.js"));
+
+var _sha = _interopRequireDefault(require("./sha1.js"));
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+const v5 = (0, _v.default)('v5', 0x50, _sha.default);
+var _default = v5;
+exports.default = _default;
+},{"./sha1.js":13,"./v35.js":17}],20:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+
+var _regex = _interopRequireDefault(require("./regex.js"));
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function validate(uuid) {
+  return typeof uuid === 'string' && _regex.default.test(uuid);
+}
+
+var _default = validate;
+exports.default = _default;
+},{"./regex.js":11}],21:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+
+var _validate = _interopRequireDefault(require("./validate.js"));
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function version(uuid) {
+  if (!(0, _validate.default)(uuid)) {
+    throw TypeError('Invalid UUID');
+  }
+
+  return parseInt(uuid.slice(14, 15), 16);
+}
+
+var _default = version;
+exports.default = _default;
+},{"./validate.js":20}],22:[function(require,module,exports){
 
 /**
  * Expose `Emitter`.
@@ -2443,7 +3470,7 @@ Emitter.prototype.hasListeners = function(event){
   return !! this.listeners(event).length;
 };
 
-},{}],7:[function(require,module,exports){
+},{}],23:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.hasCORS = void 0;
@@ -2459,7 +3486,7 @@ catch (err) {
 }
 exports.hasCORS = value;
 
-},{}],8:[function(require,module,exports){
+},{}],24:[function(require,module,exports){
 "use strict";
 // imported from https://github.com/galkn/querystring
 /**
@@ -2500,7 +3527,7 @@ function decode(qs) {
 }
 exports.decode = decode;
 
-},{}],9:[function(require,module,exports){
+},{}],25:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.parse = void 0;
@@ -2567,7 +3594,7 @@ function queryKey(uri, query) {
     return data;
 }
 
-},{}],10:[function(require,module,exports){
+},{}],26:[function(require,module,exports){
 // imported from https://github.com/unshiftio/yeast
 'use strict';
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -2624,7 +3651,7 @@ exports.yeast = yeast;
 for (; i < length; i++)
     map[alphabet[i]] = i;
 
-},{}],11:[function(require,module,exports){
+},{}],27:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.globalThisShim = void 0;
@@ -2640,7 +3667,7 @@ exports.globalThisShim = (() => {
     }
 })();
 
-},{}],12:[function(require,module,exports){
+},{}],28:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.nextTick = exports.parse = exports.installTimerFunctions = exports.transports = exports.Transport = exports.protocol = exports.Socket = void 0;
@@ -2658,7 +3685,7 @@ Object.defineProperty(exports, "parse", { enumerable: true, get: function () { r
 var websocket_constructor_js_1 = require("./transports/websocket-constructor.js");
 Object.defineProperty(exports, "nextTick", { enumerable: true, get: function () { return websocket_constructor_js_1.nextTick; } });
 
-},{"./contrib/parseuri.js":9,"./socket.js":13,"./transport.js":14,"./transports/index.js":15,"./transports/websocket-constructor.js":17,"./util.js":20}],13:[function(require,module,exports){
+},{"./contrib/parseuri.js":25,"./socket.js":29,"./transport.js":30,"./transports/index.js":31,"./transports/websocket-constructor.js":33,"./util.js":36}],29:[function(require,module,exports){
 "use strict";
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
@@ -3269,7 +4296,7 @@ class Socket extends component_emitter_1.Emitter {
 exports.Socket = Socket;
 Socket.protocol = engine_io_parser_1.protocol;
 
-},{"./contrib/parseqs.js":8,"./contrib/parseuri.js":9,"./transports/index.js":15,"./util.js":20,"@socket.io/component-emitter":6,"debug":21,"engine.io-parser":28}],14:[function(require,module,exports){
+},{"./contrib/parseqs.js":24,"./contrib/parseuri.js":25,"./transports/index.js":31,"./util.js":36,"@socket.io/component-emitter":22,"debug":37,"engine.io-parser":44}],30:[function(require,module,exports){
 "use strict";
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
@@ -3395,7 +4422,7 @@ class Transport extends component_emitter_1.Emitter {
 }
 exports.Transport = Transport;
 
-},{"./util.js":20,"@socket.io/component-emitter":6,"debug":21,"engine.io-parser":28}],15:[function(require,module,exports){
+},{"./util.js":36,"@socket.io/component-emitter":22,"debug":37,"engine.io-parser":44}],31:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.transports = void 0;
@@ -3406,7 +4433,7 @@ exports.transports = {
     polling: polling_js_1.Polling,
 };
 
-},{"./polling.js":16,"./websocket.js":18}],16:[function(require,module,exports){
+},{"./polling.js":32,"./websocket.js":34}],32:[function(require,module,exports){
 "use strict";
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
@@ -3831,7 +4858,7 @@ function unloadHandler() {
     }
 }
 
-},{"../contrib/parseqs.js":8,"../contrib/yeast.js":10,"../globalThis.js":11,"../transport.js":14,"../util.js":20,"./xmlhttprequest.js":19,"@socket.io/component-emitter":6,"debug":21,"engine.io-parser":28}],17:[function(require,module,exports){
+},{"../contrib/parseqs.js":24,"../contrib/yeast.js":26,"../globalThis.js":27,"../transport.js":30,"../util.js":36,"./xmlhttprequest.js":35,"@socket.io/component-emitter":22,"debug":37,"engine.io-parser":44}],33:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.defaultBinaryType = exports.usingBrowserWebSocket = exports.WebSocket = exports.nextTick = void 0;
@@ -3849,7 +4876,7 @@ exports.WebSocket = globalThis_js_1.globalThisShim.WebSocket || globalThis_js_1.
 exports.usingBrowserWebSocket = true;
 exports.defaultBinaryType = "arraybuffer";
 
-},{"../globalThis.js":11}],18:[function(require,module,exports){
+},{"../globalThis.js":27}],34:[function(require,module,exports){
 (function (Buffer){(function (){
 "use strict";
 var __importDefault = (this && this.__importDefault) || function (mod) {
@@ -4030,7 +5057,7 @@ class WS extends transport_js_1.Transport {
 exports.WS = WS;
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"../contrib/parseqs.js":8,"../contrib/yeast.js":10,"../transport.js":14,"../util.js":20,"./websocket-constructor.js":17,"buffer":2,"debug":21,"engine.io-parser":28}],19:[function(require,module,exports){
+},{"../contrib/parseqs.js":24,"../contrib/yeast.js":26,"../transport.js":30,"../util.js":36,"./websocket-constructor.js":33,"buffer":2,"debug":37,"engine.io-parser":44}],35:[function(require,module,exports){
 "use strict";
 // browser shim for xmlhttprequest module
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -4055,7 +5082,7 @@ function XHR(opts) {
 }
 exports.XHR = XHR;
 
-},{"../contrib/has-cors.js":7,"../globalThis.js":11}],20:[function(require,module,exports){
+},{"../contrib/has-cors.js":23,"../globalThis.js":27}],36:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.byteLength = exports.installTimerFunctions = exports.pick = void 0;
@@ -4115,7 +5142,7 @@ function utf8Length(str) {
     return length;
 }
 
-},{"./globalThis.js":11}],21:[function(require,module,exports){
+},{"./globalThis.js":27}],37:[function(require,module,exports){
 (function (process){(function (){
 /* eslint-env browser */
 
@@ -4388,7 +5415,7 @@ formatters.j = function (v) {
 };
 
 }).call(this)}).call(this,require('_process'))
-},{"./common":22,"_process":4}],22:[function(require,module,exports){
+},{"./common":38,"_process":4}],38:[function(require,module,exports){
 
 /**
  * This is the common logic for both the Node.js and web browser
@@ -4664,7 +5691,7 @@ function setup(env) {
 
 module.exports = setup;
 
-},{"ms":23}],23:[function(require,module,exports){
+},{"ms":39}],39:[function(require,module,exports){
 /**
  * Helpers.
  */
@@ -4828,7 +5855,7 @@ function plural(ms, msAbs, n, name) {
   return Math.round(ms / n) + ' ' + name + (isPlural ? 's' : '');
 }
 
-},{}],24:[function(require,module,exports){
+},{}],40:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ERROR_PACKET = exports.PACKET_TYPES_REVERSE = exports.PACKET_TYPES = void 0;
@@ -4849,7 +5876,7 @@ Object.keys(PACKET_TYPES).forEach(key => {
 const ERROR_PACKET = { type: "error", data: "parser error" };
 exports.ERROR_PACKET = ERROR_PACKET;
 
-},{}],25:[function(require,module,exports){
+},{}],41:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.decode = exports.encode = void 0;
@@ -4899,7 +5926,7 @@ const decode = (base64) => {
 };
 exports.decode = decode;
 
-},{}],26:[function(require,module,exports){
+},{}],42:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const commons_js_1 = require("./commons.js");
@@ -4952,7 +5979,7 @@ const mapBinary = (data, binaryType) => {
 };
 exports.default = decodePacket;
 
-},{"./commons.js":24,"./contrib/base64-arraybuffer.js":25}],27:[function(require,module,exports){
+},{"./commons.js":40,"./contrib/base64-arraybuffer.js":41}],43:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const commons_js_1 = require("./commons.js");
@@ -4997,7 +6024,7 @@ const encodeBlobAsBase64 = (data, callback) => {
 };
 exports.default = encodePacket;
 
-},{"./commons.js":24}],28:[function(require,module,exports){
+},{"./commons.js":40}],44:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.decodePayload = exports.decodePacket = exports.encodePayload = exports.encodePacket = exports.protocol = void 0;
@@ -5037,7 +6064,7 @@ const decodePayload = (encodedPayload, binaryType) => {
 exports.decodePayload = decodePayload;
 exports.protocol = 4;
 
-},{"./decodePacket.js":26,"./encodePacket.js":27}],29:[function(require,module,exports){
+},{"./decodePacket.js":42,"./encodePacket.js":43}],45:[function(require,module,exports){
 "use strict";
 /**
  * Initialize backoff timer with `opts`.
@@ -5109,7 +6136,7 @@ Backoff.prototype.setJitter = function (jitter) {
     this.jitter = jitter;
 };
 
-},{}],30:[function(require,module,exports){
+},{}],46:[function(require,module,exports){
 "use strict";
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
@@ -5180,7 +6207,7 @@ Object.defineProperty(exports, "protocol", { enumerable: true, get: function () 
 
 module.exports = lookup;
 
-},{"./manager.js":31,"./socket.js":33,"./url.js":34,"debug":35,"socket.io-parser":39}],31:[function(require,module,exports){
+},{"./manager.js":47,"./socket.js":49,"./url.js":50,"debug":51,"socket.io-parser":55}],47:[function(require,module,exports){
 "use strict";
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
@@ -5588,7 +6615,7 @@ class Manager extends component_emitter_1.Emitter {
 }
 exports.Manager = Manager;
 
-},{"./contrib/backo2.js":29,"./on.js":32,"./socket.js":33,"@socket.io/component-emitter":6,"debug":35,"engine.io-client":12,"socket.io-parser":39}],32:[function(require,module,exports){
+},{"./contrib/backo2.js":45,"./on.js":48,"./socket.js":49,"@socket.io/component-emitter":22,"debug":51,"engine.io-client":28,"socket.io-parser":55}],48:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.on = void 0;
@@ -5600,7 +6627,7 @@ function on(obj, ev, fn) {
 }
 exports.on = on;
 
-},{}],33:[function(require,module,exports){
+},{}],49:[function(require,module,exports){
 "use strict";
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
@@ -6468,7 +7495,7 @@ class Socket extends component_emitter_1.Emitter {
 }
 exports.Socket = Socket;
 
-},{"./on.js":32,"@socket.io/component-emitter":6,"debug":35,"socket.io-parser":39}],34:[function(require,module,exports){
+},{"./on.js":48,"@socket.io/component-emitter":22,"debug":51,"socket.io-parser":55}],50:[function(require,module,exports){
 "use strict";
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
@@ -6540,13 +7567,13 @@ function url(uri, path = "", loc) {
 }
 exports.url = url;
 
-},{"debug":35,"engine.io-client":12}],35:[function(require,module,exports){
-arguments[4][21][0].apply(exports,arguments)
-},{"./common":36,"_process":4,"dup":21}],36:[function(require,module,exports){
-arguments[4][22][0].apply(exports,arguments)
-},{"dup":22,"ms":37}],37:[function(require,module,exports){
-arguments[4][23][0].apply(exports,arguments)
-},{"dup":23}],38:[function(require,module,exports){
+},{"debug":51,"engine.io-client":28}],51:[function(require,module,exports){
+arguments[4][37][0].apply(exports,arguments)
+},{"./common":52,"_process":4,"dup":37}],52:[function(require,module,exports){
+arguments[4][38][0].apply(exports,arguments)
+},{"dup":38,"ms":53}],53:[function(require,module,exports){
+arguments[4][39][0].apply(exports,arguments)
+},{"dup":39}],54:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.reconstructPacket = exports.deconstructPacket = void 0;
@@ -6636,7 +7663,7 @@ function _reconstructPacket(data, buffers) {
     return data;
 }
 
-},{"./is-binary.js":40}],39:[function(require,module,exports){
+},{"./is-binary.js":56}],55:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Decoder = exports.Encoder = exports.PacketType = exports.protocol = void 0;
@@ -6941,7 +7968,7 @@ class BinaryReconstructor {
     }
 }
 
-},{"./binary.js":38,"./is-binary.js":40,"@socket.io/component-emitter":6,"debug":41}],40:[function(require,module,exports){
+},{"./binary.js":54,"./is-binary.js":56,"@socket.io/component-emitter":22,"debug":57}],56:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.hasBinary = exports.isBinary = void 0;
@@ -6998,10 +8025,10 @@ function hasBinary(obj, toJSON) {
 }
 exports.hasBinary = hasBinary;
 
-},{}],41:[function(require,module,exports){
-arguments[4][21][0].apply(exports,arguments)
-},{"./common":42,"_process":4,"dup":21}],42:[function(require,module,exports){
-arguments[4][22][0].apply(exports,arguments)
-},{"dup":22,"ms":43}],43:[function(require,module,exports){
-arguments[4][23][0].apply(exports,arguments)
-},{"dup":23}]},{},[5]);
+},{}],57:[function(require,module,exports){
+arguments[4][37][0].apply(exports,arguments)
+},{"./common":58,"_process":4,"dup":37}],58:[function(require,module,exports){
+arguments[4][38][0].apply(exports,arguments)
+},{"dup":38,"ms":59}],59:[function(require,module,exports){
+arguments[4][39][0].apply(exports,arguments)
+},{"dup":39}]},{},[5]);

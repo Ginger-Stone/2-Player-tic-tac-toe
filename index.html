@@ -44,6 +44,16 @@
             Have MAD fun🍻
           </p>
         </div>
+
+        <!-- TODO: Add some form of disclaimer stating that users should not share personal info on this platform and messages are not stored -->
+
+        <!-- TODO: Also add game author -->
+        <strong
+          >Game designed and developed by
+          <a href="https://www.linkedin.com/in/doreenchemweno/" target="_blank">
+            Doreen Chemweno</a
+          ></strong
+        >
       </div>
 
       <div id="users-list">
@@ -62,13 +72,13 @@
         </div>
       </div>
     </div>
-    <div class="game-play">
+    <div id="game-play">
       <div id="game-board">
         <!-- <div class="game-block" id="0" onclick="playerMove(this.id)"></div> -->
       </div>
       <aside>
         <div id="game-status">
-          <h2>Game Status</h2>
+          <h2>Game Status - <span id="players">Gina VS Ron</span></h2>
           <div id="player-switching">
             <span id="current-player">Gina</span>'s turn
           </div>
@@ -76,55 +86,23 @@
         <div id="chat">
           <h2>Chat</h2>
           <div id="chat-box">
-            <div class="chat-item">
+            <!-- <div class="chat-item">
               <h6>Rico</h6>
               <p>Heey G!! Im'ma beat you on this one</p>
-            </div>
-            <div class="chat-item">
-              <h6>Rico</h6>
-              <p>Heey G!! Im'ma beat you on this one</p>
-            </div>
-            <div class="chat-item">
-              <h6>Rico</h6>
-              <p>Heey G!! Im'ma beat you on this one</p>
-            </div>
-            <div class="chat-item">
-              <h6>Gina</h6>
-              <p>Brind it on bruh!</p>
-            </div>
-            <div class="chat-item">
-              <h6>Gina</h6>
-              <p>Brind it on bruh!</p>
-            </div>
-            <div class="chat-item">
-              <h6>Gina</h6>
-              <p>Brind it on bruh!</p>
-            </div>
-            <div class="chat-item">
-              <h6>Gina</h6>
-              <p>Brind it on bruh!</p>
-            </div>
-            <div class="chat-item">
-              <h6>Gina</h6>
-              <p>Brind it on bruh!</p>
-            </div>
-            <div class="chat-item">
-              <h6>Gina</h6>
-              <p>Brind it on bruh!</p>
-            </div>
+            </div> -->
           </div>
           <div id="send-message">
-            <form action="">
+            <form action="" id="send-message-form">
               <div class="input">
                 <label for="message" hidden>Message:</label>
                 <textarea
                   type="text"
-                  name=""
+                  name="message"
                   id=""
                   placeholder="Send message..."
                 ></textarea>
               </div>
-              <button onclick="sendMessage()">send</button>
+              <button type="submit">send</button>
             </form>
           </div>
         </div>
