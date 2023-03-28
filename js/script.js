@@ -5,12 +5,6 @@ let BoardArray = new Array(gridSize)
   .map(() => new Array(gridSize).fill("")); //store played positions here -> initialized as empty
 let gameStatus = document.getElementById("game-status");
 
-function evaluateGame() {
-  // TODO: horizontal check()
-  // TODO: vertical check()
-  // TODO: diagonal check()
-}
-
 function generateBoard() {
   let gameBoard = document.getElementById("game-board");
   for (let i = 0; i < gridSize * gridSize; i++) {

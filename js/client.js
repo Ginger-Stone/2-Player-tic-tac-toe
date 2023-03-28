@@ -11,6 +11,11 @@ const Symbols = {
   player2: "O",
 };
 
+const GameState = {
+  ongoing: "ONGOING",
+  draw: "DRAW",
+};
+
 // generate a unique identifier for the user
 const userId = uuidv4();
 
@@ -117,6 +122,72 @@ function playerMove(blockId) {
   if (userId === sender) socket.emit("playerMove", { sender, blockId });
 }
 
+function evaluateGame(board) {
+  let vert = [],
+    hor = [],
+    diagRL = [],
+    diagLR = [];
+  let blanks = false;
+  for (let i = 0; i < gridSize; i++) {
+    (hor = []), (vert = []);
+    for (let j = 0; j < gridSize; j++) {
+      if (board[i][j] === "" && !blanks) blanks = true;
+      if (
+        board[i][j] !== "" &&
+        j + 1 < gridSize &&
+        board[i][j] === board[i][j + 1]
+      ) {
+        // horizontal check
+        if (j === 0) hor.push(board[i][j]);
+        hor.push(board[i][j + 1]);
+      }
+      // vertical check
+      if (
+        board[j][i] !== "" &&
+        j + 1 < gridSize &&
+        board[j][i] === board[j + 1][i]
+      ) {
+        if (j === 0) vert.push(board[j][i]);
+        vert.push(board[j + 1][i]);
+      }
+      // diagonal check
+      // diagonal check - left to right
+      if (
+        i === 0 &&
+        board[j][j] !== "" &&
+        j + 1 < gridSize &&
+        board[j][j] === board[j + 1][j + 1]
+      ) {
+        if (j === 0) {
+          diagLR = [];
+          diagLR.push(board[j][j]);
+        }
+        diagLR.push(board[j + 1][j + 1]);
+      }
+      // diagonal check - right to left
+      if (
+        i === gridSize - 1 &&
+        board[j][i - j] !== "" &&
+        j + 1 < gridSize &&
+        board[j][i - j] === board[j + 1][i - j - 1]
+      ) {
+        if (j === 0) {
+          diagRL = [];
+          diagRL.push(board[j][i - j]);
+        }
+        diagRL.push(board[j + 1][i - j - 1]);
+      }
+    }
+    // console.log(diagRL);
+    if (hor.length === gridSize) return hor;
+    if (vert.length === gridSize) return vert;
+    if (diagLR.length === gridSize) return diagLR;
+    if (diagRL.length === gridSize) return diagRL;
+  }
+
+  return blanks ? [GameState.ongoing] : [GameState.draw];
+}
+
 function gameStart(me, selectedUser) {
   // display game area with tic tac toe and chat box
   const gameArea = document.getElementById("game-play");
@@ -131,8 +202,17 @@ function gameStart(me, selectedUser) {
   // activate chat and allow them to communicate✔️
 
   // select starting player
-  // currentPlayer = me;
   socket.emit("currentPlayer", { playerId: me.userId });
+}
+
+function gameOver(data) {
+  if (data[0] === GameState.draw) {
+    // what to do if users draw
+    console.log("DRAW");
+  } else {
+    // what to do if a certain player wins
+    console.log(data);
+  }
 }
 
 const form = document.getElementById("send-message-form");
@@ -174,12 +254,22 @@ const playerMoveHandler = ({ senderName, senderId, playerNumber, blockId }) => {
   if (BoardArray[row][col] === "") {
     BoardArray[row][col] =
       playerNumber === 1 ? Symbols.player1 : Symbols.player2;
-    // TODO: switch player
-    let playerId = localStorage.getItem("userId");
-    let currentPlayer = setCurrentPlayer.dataset.userId;
-    console.log(playerId, currentPlayer, localStorage.getItem("username"));
-    if (playerId !== currentPlayer) {
-      socket.emit("currentPlayer", { playerId });
+
+    // Check if the player has won --> end game if player has won
+    let gameState = evaluateGame(BoardArray);
+    console.log(gameState);
+    if (gameState.length === gridSize || gameState[0] === GameState.draw) {
+      // TODO: what to do when game is over
+      // socket.emit("currentPlayer", { playerId: null });
+      gameOver(gameState);
+    } else if (gameState[0] === GameState.ongoing) {
+      // TODO: switch player
+      let playerId = localStorage.getItem("userId");
+      let currentPlayer = setCurrentPlayer.dataset.userId;
+      console.log(playerId, currentPlayer, localStorage.getItem("username"));
+      if (playerId !== currentPlayer) {
+        socket.emit("currentPlayer", { playerId });
+      }
     }
   }
 };
