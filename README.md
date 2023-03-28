@@ -1,4 +1,4 @@
-<!-- TODO: A list of tasks to be completed in the project -->
+## TODO: A list of tasks to be completed in the project
 
 - [ ] Evaluate game function should return the positions of the array filled instead of symbols
 - [ ] Create the game over UI
