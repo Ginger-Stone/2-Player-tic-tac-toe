@@ -12,7 +12,27 @@ body {
   position: absolute;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.3);
+  background-color: rgba(255, 255, 255, 0.9);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  font-size: 2.5em;
+  font-weight: bold;
+}
+
+select,
+input[type="submit"] {
+  vertical-align: middle;
+  padding: 10px 30px;
+  font-size: 0.8em;
+  border-radius: 10px;
+  background-color: white;
+}
+
+input[type="submit"]:hover {
+  background-color: brown;
+  color: white;
 }
 
 .hide {
@@ -49,11 +69,13 @@ body {
 
 .game-info {
   width: 65%;
+  height: 100vh;
   overflow-y: hidden;
 }
 
 #users-list {
   width: 30%;
+  max-height: 100vh;
   overflow-y: hidden;
 }
 #users-list h2 {
@@ -66,20 +88,29 @@ body {
   height: 80vh;
 }
 
+#game {
+  overflow: hidden;
+  width: 99vw;
+  height: 99vh;
+  position: absolute;
+  top: 0;
+  margin: 0;
+  padding: 0;
+  visibility: hidden;
+}
+
 #game-play {
   display: flex;
   justify-content: space-between;
-  position: absolute;
-  top: 0;
   padding: 5px 0;
   background-color: whitesmoke;
   overflow: hidden;
-  visibility: hidden;
   /* align-items: center; */
 }
 .show {
   visibility: visible !important;
 }
+
 #game-board {
   position: relative;
   width: 98vmin;
@@ -232,4 +263,20 @@ h2 {
 }
 .status-red {
   background-color: rgb(247, 7, 7);
+}
+
+@media screen and (max-width: 768px) {
+  #game {
+    overflow-y: scroll;
+  }
+  #home,
+  #game-play {
+    flex-wrap: wrap;
+    overflow-y: scroll;
+  }
+
+  .game-info,
+  #users-list {
+    width: 100%;
+  }
 }

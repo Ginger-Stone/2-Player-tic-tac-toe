@@ -159,6 +159,18 @@ io.on("connection", (socket) => {
       playerId,
     });
   });
+
+  // Start new game
+  socket.on("newGame", ({ playerId, currentGridSize }) => {
+    // Send the move to the recipients only
+    io.to(clients[playerId].room).emit("newGame", {
+      currentGridSize,
+    });
+    io.to(clients[playerId].room).emit("currentPlayer", {
+      playerUsername: clients[playerId].username,
+      playerId,
+    });
+  });
 });
 
 httpServer.listen(3000, () => {

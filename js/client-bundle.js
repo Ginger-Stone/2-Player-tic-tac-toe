@@ -2209,9 +2209,16 @@ process.umask = function() { return 0; };
 const io = require("socket.io-client");
 const { v4: uuidv4 } = require("uuid");
 
+gridSize = 4;
+let gridMax = []; //store values to use when storing elements to 2D array
+let BoardArray = new Array(gridSize)
+  .fill(0)
+  .map(() => new Array(gridSize).fill("")); //store played positions here -> initialized as empty
+const gameStatus = document.getElementById("game-status");
+
 const playersOnline = document.getElementById("players-online");
 
-const setCurrentPlayer = document.getElementById("current-player");
+// const setCurrentPlayer = document.getElementById("current-player");
 // let currentPlayer;
 const Symbols = {
   player1: "X",
@@ -2241,6 +2248,22 @@ const socket = io("http://127.0.0.1:3000", {
 window.selectedUser = selectedUser;
 window.playerMove = playerMove;
 // window.sendMessage = sendMessage;
+
+function generateBoard() {
+  let gameBoard = document.getElementById("game-board");
+  for (let i = 0; i < gridSize * gridSize; i++) {
+    // add values to be used to determine position of X's and O's in 2D array
+    if (i < gridSize) {
+      gridMax.push((i / gridSize) * 100);
+    }
+    let block = document.createElement("div");
+    block.id = i;
+    let gridClass = `grid${gridSize}X${gridSize}`;
+    block.classList.add("game-block", gridClass);
+    block.setAttribute("onclick", "playerMove(this.id)");
+    gameBoard.append(block);
+  }
+}
 
 function selectedUser(selectedUserId) {
   console.log("selectedUserId:", selectedUserId);
@@ -2322,6 +2345,7 @@ function updateUserStatus(id) {
 }
 
 function playerMove(blockId) {
+  const setCurrentPlayer = document.getElementById("current-player");
   // send to server the move that has been made
   const userId = setCurrentPlayer.dataset.userId;
   const sender = localStorage.getItem("userId");
@@ -2397,10 +2421,11 @@ function evaluateGame(board) {
 
 function gameStart(me, selectedUser) {
   // display game area with tic tac toe and chat box
-  const gameArea = document.getElementById("game-play");
-  console.log(gameArea);
-  gameArea.classList.add("show");
-  console.log(gameArea);
+  const game = document.getElementById("game");
+  // const gameArea = document.getElementById("game-play");
+  // console.log(gameArea);
+  game.classList.add("show");
+  // console.log(gameArea);
 
   // Update the info to indicate the players. The two battling it out
   const players = document.getElementById("players");
@@ -2415,6 +2440,7 @@ function gameStart(me, selectedUser) {
 function gameOver(data, winner) {
   const winnerAnnouncement = document.getElementById("player-switching");
   const overlay = document.getElementById("overlay");
+  const winnerBoard = document.getElementById("winner-board");
   if (data[0] === GameState.draw) {
     // what to do if users draw
     console.log("DRAW");
@@ -2423,6 +2449,7 @@ function gameOver(data, winner) {
       winingBlock.style.color = "grey";
       winingBlock.style.fontSize = "7em";
       winnerAnnouncement.innerHTML = `It's a DRAW`;
+      winnerBoard.innerHTML = `It's a DRAW`;
     }
   } else {
     // what to do if a certain player wins
@@ -2433,21 +2460,71 @@ function gameOver(data, winner) {
       winingBlock.style.color = "brown";
       winingBlock.style.fontSize = "7em";
       winnerAnnouncement.innerHTML = `${winner} WINS`;
+      winnerBoard.innerHTML = `${winner} WINS`;
     }
   }
   overlay.classList.remove("hide");
 }
 
-const form = document.getElementById("send-message-form");
+const sendMessageForm = document.getElementById("send-message-form");
 
-form.addEventListener("submit", (event) => {
+sendMessageForm.addEventListener("submit", (event) => {
   event.preventDefault(); // prevent default form submission behavior
 
   // do something with the form data
   const sender = localStorage.getItem("userId");
-  const message = form.elements["message"].value;
+  const message = sendMessageForm.elements["message"].value;
   socket.emit("privateMessage", { sender, message });
 });
+
+function regenerateBoardArray() {
+  gridMax = []; //store values to use when storing elements to 2D array
+  BoardArray = "";
+  BoardArray = new Array(gridSize)
+    .fill(0)
+    .map(() => new Array(gridSize).fill("")); //store played positions here -> initialized as empty
+}
+
+function removeBoard() {
+  let gameBlocks = document.getElementsByClassName("game-block");
+  while (gameBlocks.length > 0) {
+    gameBlocks[0].remove();
+    gameBlocks = document.getElementsByClassName("game-block");
+  }
+}
+const newGameForm = document.getElementById("new-game");
+
+newGameForm.addEventListener("submit", (event) => {
+  event.preventDefault(); // prevent default form submission behavior
+
+  // do something with the form data
+  console.log(newGameForm.elements["levels"].value);
+  socket.emit("newGame", {
+    playerId: localStorage.getItem("userId"),
+    currentGridSize: Number(newGameForm.elements["levels"].value),
+  });
+});
+
+const newGameHandler = ({ currentGridSize }) => {
+  const overlay = document.getElementById("overlay");
+  gridSize = currentGridSize;
+  console.log(gridSize);
+  removeBoard();
+  // since Board Array is associated with the board, regenerate it anytime a new board is to be created
+  regenerateBoardArray();
+  console.log(BoardArray);
+  generateBoard();
+  !overlay.classList.contains("hide") && overlay.classList.add("hide");
+
+  // setCurrentPlayer = document.getElementById("current-player");
+  const playerSwitcher = document.getElementById("player-switching");
+  const span = document.createElement("span");
+  span.id = "current-player";
+  const textNode = document.createTextNode("'s turn");
+  playerSwitcher.innerHTML = "";
+  playerSwitcher.appendChild(span);
+  playerSwitcher.appendChild(textNode);
+};
 
 // Handle the response from the server
 const selectUserResponseHandler = (response) => {
@@ -2457,6 +2534,10 @@ const selectUserResponseHandler = (response) => {
     updateUserStatus(response.selectedUser.userId);
     updateUserStatus(response.me.userId);
     gameStart(response.me, response.selectedUser);
+    socket.emit("newGame", {
+      playerId: localStorage.getItem("userId"),
+      currentGridSize: gridSize,
+    });
   } else {
     // The user was already engaged, display an error message to the user
     // TODO: have some text that appears for a few seconds below the player name and status stating the user is engaged
@@ -2464,7 +2545,8 @@ const selectUserResponseHandler = (response) => {
 };
 
 const playerMoveHandler = ({ senderName, senderId, playerNumber, blockId }) => {
-  console.log(localStorage.getItem.userId);
+  const setCurrentPlayer = document.getElementById("current-player");
+  console.log(BoardArray);
   document.getElementById(blockId).innerText =
     playerNumber === 1 ? Symbols.player1 : Symbols.player2;
   blockId = Number(blockId);
@@ -2498,6 +2580,7 @@ const playerMoveHandler = ({ senderName, senderId, playerNumber, blockId }) => {
 };
 
 const currentPlayerHandler = ({ playerId, playerUsername }) => {
+  const setCurrentPlayer = document.getElementById("current-player");
   setCurrentPlayer.innerHTML = playerUsername;
   setCurrentPlayer.dataset.userId = playerId;
 };
@@ -2528,12 +2611,16 @@ const disconnectedHandler = (data) => {
 
 socket.on("connect", connectHandler);
 socket.on("userConnected", userConnectedHandler);
+socket.on("newGame", newGameHandler);
 socket.on("selectUserResponse", selectUserResponseHandler);
 socket.on("privateMessage", privateMessageHandler);
 socket.on("playerMove", playerMoveHandler);
 socket.on("currentPlayer", currentPlayerHandler);
 socket.on("connected", connectedHandler);
 socket.on("disconnected", disconnectedHandler);
+
+// generateBoard();
+// console.log(`gridSize: ${gridSize}`);
 
 },{"socket.io-client":46,"uuid":6}],6:[function(require,module,exports){
 "use strict";
