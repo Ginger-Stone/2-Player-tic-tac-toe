@@ -1,4 +1,5 @@
 // REMEMBER to run -> browserify client.js -o client-bundle.js <- whenever changes are made to this file
+const config = require("../config.js");
 const io = require("socket.io-client");
 const { v4: uuidv4 } = require("uuid");
 
@@ -33,9 +34,11 @@ const username = prompt("Please enter your username:");
 localStorage.setItem("username", username);
 
 // connect to the WebSocket server with the user ID
-const socket = io("http://127.0.0.1:3000", {
+const socket = io(config.backendURL, {
   query: { userId: userId, username: username },
 });
+
+console.log(config);
 
 // Expose myFunction in the global scope - Makes the function inside the bundled js file accessible to HTML and other js scripts
 window.selectedUser = selectedUser;

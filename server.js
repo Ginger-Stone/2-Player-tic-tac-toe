@@ -1,5 +1,6 @@
 const { createServer } = require("http");
 const { Server } = require("socket.io");
+require("dotenv").config();
 
 // List of all connected users
 const userSockets = new Map();
@@ -10,7 +11,7 @@ let engagedPairs = {};
 const httpServer = createServer();
 const io = new Server(httpServer, {
   cors: {
-    origin: "http://127.0.0.1:5500",
+    origin: `${process.env.CLIENT_URL}:${process.env.CLIENT_PORT}`,
     credentials: true,
   },
 });
@@ -173,6 +174,6 @@ io.on("connection", (socket) => {
   });
 });
 
-httpServer.listen(3000, () => {
-  console.log("Server started on port 3000");
+httpServer.listen(process.env.SERVER_PORT, () => {
+  console.log(`Server started on port ${process.env.SERVER_PORT}`);
 });
