@@ -72,43 +72,58 @@
         </div>
       </div>
     </div>
-    <div id="game-play">
-      <div id="game-board">
-        <div id="overlay" class="overlay hide"></div>
-        <!-- <div class="game-block" id="0" onclick="playerMove(this.id)"></div> -->
-      </div>
-      <aside>
-        <div id="game-status">
-          <h2>Game Status - <span id="players">Gina VS Ron</span></h2>
-          <div id="player-switching">
-            <span id="current-player">Gina</span>'s turn
+    <section id="game">
+      <div id="game-play">
+        <div id="game-board">
+          <div id="overlay" class="overlay hide">
+            <h2>GAME OVER</h1>
+            <p id="winner-board">Ricky Wins</p>
+            <form id="new-game">
+              <label for="levels">Select Level: </label>
+
+              <select name="levels" id="levels">
+                <option value="3">1</option>
+                <option value="4">2</option>
+                <option value="5">3</option>
+              </select>
+              <input type="submit" value="New Game" />
+            </form>
           </div>
+          <!-- <div class="game-block" id="0" onclick="playerMove(this.id)"></div> -->
         </div>
-        <div id="chat">
-          <h2>Chat</h2>
-          <div id="chat-box">
-            <!-- <div class="chat-item">
+        <aside>
+          <div id="game-status">
+            <h2>Game Status - <span id="players">Gina VS Ron</span></h2>
+            <div id="player-switching">
+              <span id="current-player">Gina</span>'s turn
+            </div>
+          </div>
+          <div id="chat">
+            <h2>Chat</h2>
+            <div id="chat-box">
+              <!-- <div class="chat-item">
               <h6>Rico</h6>
               <p>Heey G!! Im'ma beat you on this one</p>
             </div> -->
+            </div>
+            <div id="send-message">
+              <form action="" id="send-message-form">
+                <div class="input">
+                  <label for="message" hidden>Message:</label>
+                  <textarea
+                    type="text"
+                    name="message"
+                    id=""
+                    placeholder="Send message..."
+                  ></textarea>
+                </div>
+                <button type="submit">send</button>
+              </form>
+            </div>
           </div>
-          <div id="send-message">
-            <form action="" id="send-message-form">
-              <div class="input">
-                <label for="message" hidden>Message:</label>
-                <textarea
-                  type="text"
-                  name="message"
-                  id=""
-                  placeholder="Send message..."
-                ></textarea>
-              </div>
-              <button type="submit">send</button>
-            </form>
-          </div>
-        </div>
-      </aside>
-    </div>
+        </aside>
+      </div>
+    </section>
     <!-- JS scripts -->
     <!-- Socket.IO client -->
     <script src="./js/client-bundle.js"></script>
