@@ -2205,7 +2205,21 @@ process.chdir = function (dir) {
 process.umask = function() { return 0; };
 
 },{}],5:[function(require,module,exports){
+// require("dotenv").config({ debug: true });
+
+const PORT = "3000";
+const SERVER = "http://127.0.0.1";
+
+// console.log(process.env);
+// console.log("PORT: ", PORT);
+// Store configurations to be used on the client side of the application
+module.exports = {
+  backendURL: PORT !== "" ? `${SERVER}:${PORT}` : SERVER,
+};
+
+},{}],6:[function(require,module,exports){
 // REMEMBER to run -> browserify client.js -o client-bundle.js <- whenever changes are made to this file
+const config = require("../config.js");
 const io = require("socket.io-client");
 const { v4: uuidv4 } = require("uuid");
 
@@ -2233,9 +2247,11 @@ const username = prompt("Please enter your username:");
 localStorage.setItem("username", username);
 
 // connect to the WebSocket server with the user ID
-const socket = io("http://127.0.0.1:3000", {
+const socket = io(config.backendURL, {
   query: { userId: userId, username: username },
 });
+
+console.log(config);
 
 // Expose myFunction in the global scope - Makes the function inside the bundled js file accessible to HTML and other js scripts
 window.selectedUser = selectedUser;
@@ -2535,7 +2551,7 @@ socket.on("currentPlayer", currentPlayerHandler);
 socket.on("connected", connectedHandler);
 socket.on("disconnected", disconnectedHandler);
 
-},{"socket.io-client":46,"uuid":6}],6:[function(require,module,exports){
+},{"../config.js":5,"socket.io-client":47,"uuid":7}],7:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -2615,7 +2631,7 @@ var _stringify = _interopRequireDefault(require("./stringify.js"));
 var _parse = _interopRequireDefault(require("./parse.js"));
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-},{"./nil.js":9,"./parse.js":10,"./stringify.js":14,"./v1.js":15,"./v3.js":16,"./v4.js":18,"./v5.js":19,"./validate.js":20,"./version.js":21}],7:[function(require,module,exports){
+},{"./nil.js":10,"./parse.js":11,"./stringify.js":15,"./v1.js":16,"./v3.js":17,"./v4.js":19,"./v5.js":20,"./validate.js":21,"./version.js":22}],8:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -2839,7 +2855,7 @@ function md5ii(a, b, c, d, x, s, t) {
 
 var _default = md5;
 exports.default = _default;
-},{}],8:[function(require,module,exports){
+},{}],9:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -2851,7 +2867,7 @@ var _default = {
   randomUUID
 };
 exports.default = _default;
-},{}],9:[function(require,module,exports){
+},{}],10:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -2860,7 +2876,7 @@ Object.defineProperty(exports, "__esModule", {
 exports.default = void 0;
 var _default = '00000000-0000-0000-0000-000000000000';
 exports.default = _default;
-},{}],10:[function(require,module,exports){
+},{}],11:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -2906,7 +2922,7 @@ function parse(uuid) {
 
 var _default = parse;
 exports.default = _default;
-},{"./validate.js":20}],11:[function(require,module,exports){
+},{"./validate.js":21}],12:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -2915,7 +2931,7 @@ Object.defineProperty(exports, "__esModule", {
 exports.default = void 0;
 var _default = /^(?:[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}|00000000-0000-0000-0000-000000000000)$/i;
 exports.default = _default;
-},{}],12:[function(require,module,exports){
+},{}],13:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -2941,7 +2957,7 @@ function rng() {
 
   return getRandomValues(rnds8);
 }
-},{}],13:[function(require,module,exports){
+},{}],14:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -3046,7 +3062,7 @@ function sha1(bytes) {
 
 var _default = sha1;
 exports.default = _default;
-},{}],14:[function(require,module,exports){
+},{}],15:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -3091,7 +3107,7 @@ function stringify(arr, offset = 0) {
 
 var _default = stringify;
 exports.default = _default;
-},{"./validate.js":20}],15:[function(require,module,exports){
+},{"./validate.js":21}],16:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -3199,7 +3215,7 @@ function v1(options, buf, offset) {
 
 var _default = v1;
 exports.default = _default;
-},{"./rng.js":12,"./stringify.js":14}],16:[function(require,module,exports){
+},{"./rng.js":13,"./stringify.js":15}],17:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -3216,7 +3232,7 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 const v3 = (0, _v.default)('v3', 0x30, _md.default);
 var _default = v3;
 exports.default = _default;
-},{"./md5.js":7,"./v35.js":17}],17:[function(require,module,exports){
+},{"./md5.js":8,"./v35.js":18}],18:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -3297,7 +3313,7 @@ function v35(name, version, hashfunc) {
   generateUUID.URL = URL;
   return generateUUID;
 }
-},{"./parse.js":10,"./stringify.js":14}],18:[function(require,module,exports){
+},{"./parse.js":11,"./stringify.js":15}],19:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -3341,7 +3357,7 @@ function v4(options, buf, offset) {
 
 var _default = v4;
 exports.default = _default;
-},{"./native.js":8,"./rng.js":12,"./stringify.js":14}],19:[function(require,module,exports){
+},{"./native.js":9,"./rng.js":13,"./stringify.js":15}],20:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -3358,7 +3374,7 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 const v5 = (0, _v.default)('v5', 0x50, _sha.default);
 var _default = v5;
 exports.default = _default;
-},{"./sha1.js":13,"./v35.js":17}],20:[function(require,module,exports){
+},{"./sha1.js":14,"./v35.js":18}],21:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -3376,7 +3392,7 @@ function validate(uuid) {
 
 var _default = validate;
 exports.default = _default;
-},{"./regex.js":11}],21:[function(require,module,exports){
+},{"./regex.js":12}],22:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -3398,7 +3414,7 @@ function version(uuid) {
 
 var _default = version;
 exports.default = _default;
-},{"./validate.js":20}],22:[function(require,module,exports){
+},{"./validate.js":21}],23:[function(require,module,exports){
 
 /**
  * Expose `Emitter`.
@@ -3576,7 +3592,7 @@ Emitter.prototype.hasListeners = function(event){
   return !! this.listeners(event).length;
 };
 
-},{}],23:[function(require,module,exports){
+},{}],24:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.hasCORS = void 0;
@@ -3592,7 +3608,7 @@ catch (err) {
 }
 exports.hasCORS = value;
 
-},{}],24:[function(require,module,exports){
+},{}],25:[function(require,module,exports){
 "use strict";
 // imported from https://github.com/galkn/querystring
 /**
@@ -3633,7 +3649,7 @@ function decode(qs) {
 }
 exports.decode = decode;
 
-},{}],25:[function(require,module,exports){
+},{}],26:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.parse = void 0;
@@ -3700,7 +3716,7 @@ function queryKey(uri, query) {
     return data;
 }
 
-},{}],26:[function(require,module,exports){
+},{}],27:[function(require,module,exports){
 // imported from https://github.com/unshiftio/yeast
 'use strict';
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -3757,7 +3773,7 @@ exports.yeast = yeast;
 for (; i < length; i++)
     map[alphabet[i]] = i;
 
-},{}],27:[function(require,module,exports){
+},{}],28:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.globalThisShim = void 0;
@@ -3773,7 +3789,7 @@ exports.globalThisShim = (() => {
     }
 })();
 
-},{}],28:[function(require,module,exports){
+},{}],29:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.nextTick = exports.parse = exports.installTimerFunctions = exports.transports = exports.Transport = exports.protocol = exports.Socket = void 0;
@@ -3791,7 +3807,7 @@ Object.defineProperty(exports, "parse", { enumerable: true, get: function () { r
 var websocket_constructor_js_1 = require("./transports/websocket-constructor.js");
 Object.defineProperty(exports, "nextTick", { enumerable: true, get: function () { return websocket_constructor_js_1.nextTick; } });
 
-},{"./contrib/parseuri.js":25,"./socket.js":29,"./transport.js":30,"./transports/index.js":31,"./transports/websocket-constructor.js":33,"./util.js":36}],29:[function(require,module,exports){
+},{"./contrib/parseuri.js":26,"./socket.js":30,"./transport.js":31,"./transports/index.js":32,"./transports/websocket-constructor.js":34,"./util.js":37}],30:[function(require,module,exports){
 "use strict";
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
@@ -4402,7 +4418,7 @@ class Socket extends component_emitter_1.Emitter {
 exports.Socket = Socket;
 Socket.protocol = engine_io_parser_1.protocol;
 
-},{"./contrib/parseqs.js":24,"./contrib/parseuri.js":25,"./transports/index.js":31,"./util.js":36,"@socket.io/component-emitter":22,"debug":37,"engine.io-parser":44}],30:[function(require,module,exports){
+},{"./contrib/parseqs.js":25,"./contrib/parseuri.js":26,"./transports/index.js":32,"./util.js":37,"@socket.io/component-emitter":23,"debug":38,"engine.io-parser":45}],31:[function(require,module,exports){
 "use strict";
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
@@ -4528,7 +4544,7 @@ class Transport extends component_emitter_1.Emitter {
 }
 exports.Transport = Transport;
 
-},{"./util.js":36,"@socket.io/component-emitter":22,"debug":37,"engine.io-parser":44}],31:[function(require,module,exports){
+},{"./util.js":37,"@socket.io/component-emitter":23,"debug":38,"engine.io-parser":45}],32:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.transports = void 0;
@@ -4539,7 +4555,7 @@ exports.transports = {
     polling: polling_js_1.Polling,
 };
 
-},{"./polling.js":32,"./websocket.js":34}],32:[function(require,module,exports){
+},{"./polling.js":33,"./websocket.js":35}],33:[function(require,module,exports){
 "use strict";
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
@@ -4964,7 +4980,7 @@ function unloadHandler() {
     }
 }
 
-},{"../contrib/parseqs.js":24,"../contrib/yeast.js":26,"../globalThis.js":27,"../transport.js":30,"../util.js":36,"./xmlhttprequest.js":35,"@socket.io/component-emitter":22,"debug":37,"engine.io-parser":44}],33:[function(require,module,exports){
+},{"../contrib/parseqs.js":25,"../contrib/yeast.js":27,"../globalThis.js":28,"../transport.js":31,"../util.js":37,"./xmlhttprequest.js":36,"@socket.io/component-emitter":23,"debug":38,"engine.io-parser":45}],34:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.defaultBinaryType = exports.usingBrowserWebSocket = exports.WebSocket = exports.nextTick = void 0;
@@ -4982,7 +4998,7 @@ exports.WebSocket = globalThis_js_1.globalThisShim.WebSocket || globalThis_js_1.
 exports.usingBrowserWebSocket = true;
 exports.defaultBinaryType = "arraybuffer";
 
-},{"../globalThis.js":27}],34:[function(require,module,exports){
+},{"../globalThis.js":28}],35:[function(require,module,exports){
 (function (Buffer){(function (){
 "use strict";
 var __importDefault = (this && this.__importDefault) || function (mod) {
@@ -5163,7 +5179,7 @@ class WS extends transport_js_1.Transport {
 exports.WS = WS;
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"../contrib/parseqs.js":24,"../contrib/yeast.js":26,"../transport.js":30,"../util.js":36,"./websocket-constructor.js":33,"buffer":2,"debug":37,"engine.io-parser":44}],35:[function(require,module,exports){
+},{"../contrib/parseqs.js":25,"../contrib/yeast.js":27,"../transport.js":31,"../util.js":37,"./websocket-constructor.js":34,"buffer":2,"debug":38,"engine.io-parser":45}],36:[function(require,module,exports){
 "use strict";
 // browser shim for xmlhttprequest module
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -5188,7 +5204,7 @@ function XHR(opts) {
 }
 exports.XHR = XHR;
 
-},{"../contrib/has-cors.js":23,"../globalThis.js":27}],36:[function(require,module,exports){
+},{"../contrib/has-cors.js":24,"../globalThis.js":28}],37:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.byteLength = exports.installTimerFunctions = exports.pick = void 0;
@@ -5248,7 +5264,7 @@ function utf8Length(str) {
     return length;
 }
 
-},{"./globalThis.js":27}],37:[function(require,module,exports){
+},{"./globalThis.js":28}],38:[function(require,module,exports){
 (function (process){(function (){
 /* eslint-env browser */
 
@@ -5521,7 +5537,7 @@ formatters.j = function (v) {
 };
 
 }).call(this)}).call(this,require('_process'))
-},{"./common":38,"_process":4}],38:[function(require,module,exports){
+},{"./common":39,"_process":4}],39:[function(require,module,exports){
 
 /**
  * This is the common logic for both the Node.js and web browser
@@ -5797,7 +5813,7 @@ function setup(env) {
 
 module.exports = setup;
 
-},{"ms":39}],39:[function(require,module,exports){
+},{"ms":40}],40:[function(require,module,exports){
 /**
  * Helpers.
  */
@@ -5961,7 +5977,7 @@ function plural(ms, msAbs, n, name) {
   return Math.round(ms / n) + ' ' + name + (isPlural ? 's' : '');
 }
 
-},{}],40:[function(require,module,exports){
+},{}],41:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ERROR_PACKET = exports.PACKET_TYPES_REVERSE = exports.PACKET_TYPES = void 0;
@@ -5982,7 +5998,7 @@ Object.keys(PACKET_TYPES).forEach(key => {
 const ERROR_PACKET = { type: "error", data: "parser error" };
 exports.ERROR_PACKET = ERROR_PACKET;
 
-},{}],41:[function(require,module,exports){
+},{}],42:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.decode = exports.encode = void 0;
@@ -6032,7 +6048,7 @@ const decode = (base64) => {
 };
 exports.decode = decode;
 
-},{}],42:[function(require,module,exports){
+},{}],43:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const commons_js_1 = require("./commons.js");
@@ -6085,7 +6101,7 @@ const mapBinary = (data, binaryType) => {
 };
 exports.default = decodePacket;
 
-},{"./commons.js":40,"./contrib/base64-arraybuffer.js":41}],43:[function(require,module,exports){
+},{"./commons.js":41,"./contrib/base64-arraybuffer.js":42}],44:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const commons_js_1 = require("./commons.js");
@@ -6130,7 +6146,7 @@ const encodeBlobAsBase64 = (data, callback) => {
 };
 exports.default = encodePacket;
 
-},{"./commons.js":40}],44:[function(require,module,exports){
+},{"./commons.js":41}],45:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.decodePayload = exports.decodePacket = exports.encodePayload = exports.encodePacket = exports.protocol = void 0;
@@ -6170,7 +6186,7 @@ const decodePayload = (encodedPayload, binaryType) => {
 exports.decodePayload = decodePayload;
 exports.protocol = 4;
 
-},{"./decodePacket.js":42,"./encodePacket.js":43}],45:[function(require,module,exports){
+},{"./decodePacket.js":43,"./encodePacket.js":44}],46:[function(require,module,exports){
 "use strict";
 /**
  * Initialize backoff timer with `opts`.
@@ -6242,7 +6258,7 @@ Backoff.prototype.setJitter = function (jitter) {
     this.jitter = jitter;
 };
 
-},{}],46:[function(require,module,exports){
+},{}],47:[function(require,module,exports){
 "use strict";
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
@@ -6313,7 +6329,7 @@ Object.defineProperty(exports, "protocol", { enumerable: true, get: function () 
 
 module.exports = lookup;
 
-},{"./manager.js":47,"./socket.js":49,"./url.js":50,"debug":51,"socket.io-parser":55}],47:[function(require,module,exports){
+},{"./manager.js":48,"./socket.js":50,"./url.js":51,"debug":52,"socket.io-parser":56}],48:[function(require,module,exports){
 "use strict";
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
@@ -6721,7 +6737,7 @@ class Manager extends component_emitter_1.Emitter {
 }
 exports.Manager = Manager;
 
-},{"./contrib/backo2.js":45,"./on.js":48,"./socket.js":49,"@socket.io/component-emitter":22,"debug":51,"engine.io-client":28,"socket.io-parser":55}],48:[function(require,module,exports){
+},{"./contrib/backo2.js":46,"./on.js":49,"./socket.js":50,"@socket.io/component-emitter":23,"debug":52,"engine.io-client":29,"socket.io-parser":56}],49:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.on = void 0;
@@ -6733,7 +6749,7 @@ function on(obj, ev, fn) {
 }
 exports.on = on;
 
-},{}],49:[function(require,module,exports){
+},{}],50:[function(require,module,exports){
 "use strict";
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
@@ -7601,7 +7617,7 @@ class Socket extends component_emitter_1.Emitter {
 }
 exports.Socket = Socket;
 
-},{"./on.js":48,"@socket.io/component-emitter":22,"debug":51,"socket.io-parser":55}],50:[function(require,module,exports){
+},{"./on.js":49,"@socket.io/component-emitter":23,"debug":52,"socket.io-parser":56}],51:[function(require,module,exports){
 "use strict";
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
@@ -7673,13 +7689,13 @@ function url(uri, path = "", loc) {
 }
 exports.url = url;
 
-},{"debug":51,"engine.io-client":28}],51:[function(require,module,exports){
-arguments[4][37][0].apply(exports,arguments)
-},{"./common":52,"_process":4,"dup":37}],52:[function(require,module,exports){
+},{"debug":52,"engine.io-client":29}],52:[function(require,module,exports){
 arguments[4][38][0].apply(exports,arguments)
-},{"dup":38,"ms":53}],53:[function(require,module,exports){
+},{"./common":53,"_process":4,"dup":38}],53:[function(require,module,exports){
 arguments[4][39][0].apply(exports,arguments)
-},{"dup":39}],54:[function(require,module,exports){
+},{"dup":39,"ms":54}],54:[function(require,module,exports){
+arguments[4][40][0].apply(exports,arguments)
+},{"dup":40}],55:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.reconstructPacket = exports.deconstructPacket = void 0;
@@ -7769,7 +7785,7 @@ function _reconstructPacket(data, buffers) {
     return data;
 }
 
-},{"./is-binary.js":56}],55:[function(require,module,exports){
+},{"./is-binary.js":57}],56:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Decoder = exports.Encoder = exports.PacketType = exports.protocol = void 0;
@@ -8074,7 +8090,7 @@ class BinaryReconstructor {
     }
 }
 
-},{"./binary.js":54,"./is-binary.js":56,"@socket.io/component-emitter":22,"debug":57}],56:[function(require,module,exports){
+},{"./binary.js":55,"./is-binary.js":57,"@socket.io/component-emitter":23,"debug":58}],57:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.hasBinary = exports.isBinary = void 0;
@@ -8131,10 +8147,10 @@ function hasBinary(obj, toJSON) {
 }
 exports.hasBinary = hasBinary;
 
-},{}],57:[function(require,module,exports){
-arguments[4][37][0].apply(exports,arguments)
-},{"./common":58,"_process":4,"dup":37}],58:[function(require,module,exports){
+},{}],58:[function(require,module,exports){
 arguments[4][38][0].apply(exports,arguments)
-},{"dup":38,"ms":59}],59:[function(require,module,exports){
+},{"./common":59,"_process":4,"dup":38}],59:[function(require,module,exports){
 arguments[4][39][0].apply(exports,arguments)
-},{"dup":39}]},{},[5]);
+},{"dup":39,"ms":60}],60:[function(require,module,exports){
+arguments[4][40][0].apply(exports,arguments)
+},{"dup":40}]},{},[6]);
