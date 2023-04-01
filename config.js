@@ -10,7 +10,7 @@ const SERVER =
     : "https://tictactoeandchatserver.netlify.app";
 
 // console.log(process.env);
-// console.log("PORT: ", PORT);
+console.log("SERVER: ", SERVER);
 // Store configurations to be used on the client side of the application
 module.exports = {
   backendURL: PORT !== "" ? `${SERVER}:${PORT}` : SERVER,

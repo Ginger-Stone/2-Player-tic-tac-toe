@@ -1,0 +1,10 @@
+[build]
+  functions = "functions/"
+
+[[redirects]]
+  from = "/socket.io/*"
+  to = "/functions/server"
+
+[[redirects]]
+  from = "/socket.io"
+  to = "/functions/server"
