@@ -1,13 +1,13 @@
 // require("dotenv").config({ debug: true });
 
 // prod
-const environment = "local"; //local or dev
+const environment = "prod"; //local or dev
 // dev
 const PORT = environment === "local" ? "3000" : "";
 const SERVER =
   environment === "local"
     ? "http://127.0.0.1"
-    : "https://tictactoed.netlify.app";
+    : "https://tictactoeandchatserver.netlify.app";
 
 // console.log(process.env);
 // console.log("PORT: ", PORT);
