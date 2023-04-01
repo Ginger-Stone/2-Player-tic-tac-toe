@@ -8,10 +8,19 @@ const clients = {};
 // Object to store pairs of engaged users
 let engagedPairs = {};
 
+const CLIENT =
+  process.env.CLIENT_PORT === ""
+    ? process.env.CLIENT_URL
+    : `${process.env.CLIENT_URL}:${process.env.CLIENT_PORT}`;
+const SERVER =
+  process.env.SERVER_PORT === ""
+    ? process.env.SERVER_URL
+    : `${process.env.SERVER_URL}:${process.env.SERVER_PORT}`;
+
 const httpServer = createServer();
 const io = new Server(httpServer, {
   cors: {
-    origin: `${process.env.CLIENT_URL}:${process.env.CLIENT_PORT}`,
+    origin: `${CLIENT}`,
     credentials: true,
   },
 });
