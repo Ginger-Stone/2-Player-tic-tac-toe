@@ -1,4 +1,4 @@
-// require("dotenv").config({ debug: true });
+// REMEMBER to run -> browserify client.js -o client-bundle.js <- whenever changes are made to this file
 
 // prod
 const environment = "prod"; //local or dev

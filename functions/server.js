@@ -10,19 +10,27 @@ let engagedPairs = {};
 
 const CLIENT =
   process.env.CLIENT_PORT === ""
-    ? process.env.CLIENT_URL
-    : `${process.env.CLIENT_URL}:${process.env.CLIENT_PORT}`;
-const SERVER =
-  process.env.SERVER_PORT === ""
-    ? process.env.SERVER_URL
-    : `${process.env.SERVER_URL}:${process.env.SERVER_PORT}`;
+    ? process.env.SITE_URL
+    : `${process.env.SITE_URL}:${process.env.CLIENT_PORT}`;
 
-const httpServer = createServer();
+const httpServer = require("http").createServer();
 const io = new Server(httpServer, {
   cors: {
-    origin: `${CLIENT}`,
+    origin: CLIENT,
     credentials: true,
   },
+});
+
+httpServer.on("request", (req, res) => {
+  res.setHeader("Access-Control-Allow-Origin", CLIENT);
+  res.setHeader("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE,OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+
+  if (req.method === "OPTIONS") {
+    res.writeHead(200);
+    res.end();
+    return;
+  }
 });
 
 // Function to update engagedPairs object when a user engages with another user
