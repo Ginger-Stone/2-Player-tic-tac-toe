@@ -1,4 +1,5 @@
-const { createServer } = require("http");
+// const { createServer } = require("http");
+const { createServer } = require("https");
 const { Server } = require("socket.io");
 require("dotenv").config();
 
@@ -13,24 +14,13 @@ const CLIENT =
     ? process.env.SITE_URL
     : `${process.env.SITE_URL}:${process.env.CLIENT_PORT}`;
 
-const httpServer = require("http").createServer();
+const httpServer = require("https").createServer();
 const io = new Server(httpServer, {
   cors: {
     origin: CLIENT,
     credentials: true,
+    allowedHeaders: ["Access-Control-Allow-Origin", "Authorization"],
   },
-});
-
-httpServer.on("request", (req, res) => {
-  res.setHeader("Access-Control-Allow-Origin", CLIENT);
-  res.setHeader("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE,OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
-
-  if (req.method === "OPTIONS") {
-    res.writeHead(200);
-    res.end();
-    return;
-  }
 });
 
 // Function to update engagedPairs object when a user engages with another user
@@ -48,148 +38,154 @@ function endEngagement(user) {
   }
 }
 
-io.on("connection", (socket) => {
-  console.log(`Client connected: ${socket}`);
-  console.log(`Client connected: ${socket.id}`);
+// The exports.handler function is a special function in Netlify functions that serves as the entry point for the function. When you deploy a Netlify function, the platform will look for the exports.handler function in your code and use it to handle incoming requests.
+// Export the server object for use in the Netlify function
+exports.handler = (event, context, callback) => {
+  // function code here
 
-  // extract the user ID from the query parameters
-  const userId = socket.handshake.query.userId;
-  const username = socket.handshake.query.username;
+  io.on("connection", (socket) => {
+    console.log(`Client connected: ${socket}`);
+    console.log(`Client connected: ${socket.id}`);
 
-  // socket.on("chatMessage", (msg) => {
-  //   io.emit("chatMsg", msg);
-  // });
+    // extract the user ID from the query parameters
+    const userId = socket.handshake.query.userId;
+    const username = socket.handshake.query.username;
 
-  // Handle the 'connect' event from the client
-  socket.on("connect", (data) => {
-    console.log(`User ${userId} connected with username ${username}`);
-  });
+    // socket.on("chatMessage", (msg) => {
+    //   io.emit("chatMsg", msg);
+    // });
 
-  // Handle userConnect from client
-  socket.on("userConnect", (data) => {
-    console.log(`User ${userId} connected with username ${username}`);
+    // Handle the 'connect' event from the client
+    socket.on("connect", (data) => {
+      console.log(`User ${userId} connected with username ${username}`);
+    });
 
-    // Save the username and ID as properties of the socket object
-    socket.username = username;
-    socket.userId = userId;
-    let me = { userId: socket.userId, username: socket.username };
+    // Handle userConnect from client
+    socket.on("userConnect", (data) => {
+      console.log(`User ${userId} connected with username ${username}`);
 
-    // Add the client to the clients object with its socket id as the key
-    clients[socket.userId] = {
-      username: socket.username,
-      userId: socket.userId,
-      engaged: false, //true when a user is in a game
-      room: "",
-      // socket: socket, causing circular error
-    };
-    // add the socket instance from the map
-    userSockets.set(userId, socket);
+      // Save the username and ID as properties of the socket object
+      socket.username = username;
+      socket.userId = userId;
+      let me = { userId: socket.userId, username: socket.username };
 
-    // console.log(clients[socket.id]);
+      // Add the client to the clients object with its socket id as the key
+      clients[socket.userId] = {
+        username: socket.username,
+        userId: socket.userId,
+        engaged: false, //true when a user is in a game
+        room: "",
+        // socket: socket, causing circular error
+      };
+      // add the socket instance from the map
+      userSockets.set(userId, socket);
 
-    // Emit a 'connected' event to all clients
-    io.emit("userConnected", { me, clients });
-  });
+      // console.log(clients[socket.id]);
 
-  // Handle the 'disconnect' event from the client
-  socket.on("disconnect", () => {
-    console.log(`User ${socket.userId} disconnected`);
+      // Emit a 'connected' event to all clients
+      io.emit("userConnected", { me, clients });
+    });
 
-    // Remove the client from the clients object
-    delete clients[socket.userId];
-    // remove the socket instance from the map
-    userSockets.delete(userId);
-    // end any engagements if exists
-    endEngagement(userId);
+    // Handle the 'disconnect' event from the client
+    socket.on("disconnect", () => {
+      console.log(`User ${socket.userId} disconnected`);
 
-    // Emit a 'disconnected' event to all clients
-    io.emit("disconnected", {
-      username: socket.username,
-      userId: socket.userId,
+      // Remove the client from the clients object
+      delete clients[socket.userId];
+      // remove the socket instance from the map
+      userSockets.delete(userId);
+      // end any engagements if exists
+      endEngagement(userId);
+
+      // Emit a 'disconnected' event to all clients
+      io.emit("disconnected", {
+        username: socket.username,
+        userId: socket.userId,
+      });
+    });
+
+    // When a user selects another user to play with
+    socket.on("selectUser", ({ selectedUserId, meId }) => {
+      console.log(clients);
+      console.log(meId);
+      console.log(selectedUserId);
+      if (
+        clients[meId].engaged ||
+        clients[selectedUserId].engaged ||
+        clients[meId].userId === clients[selectedUserId].userId
+      ) {
+        // The selected user is not available to play
+        socket.emit("selectUserResponse", { success: false });
+        return;
+      }
+      // Update the engaged of both users to "engaged"
+      clients[meId].engaged = true;
+      clients[selectedUserId].engaged = true;
+      engageUser(meId, selectedUserId);
+      // console.log("users engaged");
+      // console.log(engagedPairs);
+
+      // create room and add the two users -- get the engaged pairs to join a room together
+      let roomId = meId + selectedUserId;
+      clients[meId].room = roomId;
+      clients[meId].playerNumber = 1;
+      clients[selectedUserId].room = roomId;
+      clients[selectedUserId].playerNumber = 2;
+      // Get the socket associated with the user id
+      const userSocket = userSockets.get(selectedUserId);
+      // Join a private room with the selectedUserId and meId
+      socket.join(roomId);
+      userSocket.join(roomId);
+      io.emit("selectUserResponse", {
+        me: clients[meId],
+        selectedUser: clients[selectedUserId],
+        success: true,
+      });
+    });
+
+    // Handle private chat messages
+    socket.on("privateMessage", ({ sender, message }) => {
+      // Send the message to the recipient only
+      io.to(clients[sender].room).emit("privateMessage", {
+        senderName: clients[sender].username,
+        senderId: clients[sender].userId,
+        message,
+      });
+    });
+
+    // Handle player moves
+    socket.on("playerMove", ({ sender, blockId }) => {
+      // Send the move to the recipients only
+      io.to(clients[sender].room).emit("playerMove", {
+        senderName: clients[sender].username,
+        senderId: clients[sender].userId,
+        playerNumber: clients[sender].playerNumber,
+        blockId,
+      });
+    });
+
+    // Set current player
+    socket.on("currentPlayer", ({ playerId }) => {
+      // Send the move to the recipients only
+      io.to(clients[playerId].room).emit("currentPlayer", {
+        playerUsername: clients[playerId].username,
+        playerId,
+      });
+    });
+
+    // Start new game
+    socket.on("newGame", ({ playerId, currentGridSize }) => {
+      // Send the move to the recipients only
+      io.to(clients[playerId].room).emit("newGame", {
+        currentGridSize,
+      });
+      io.to(clients[playerId].room).emit("currentPlayer", {
+        playerUsername: clients[playerId].username,
+        playerId,
+      });
     });
   });
-
-  // When a user selects another user to play with
-  socket.on("selectUser", ({ selectedUserId, meId }) => {
-    console.log(clients);
-    console.log(meId);
-    console.log(selectedUserId);
-    if (
-      clients[meId].engaged ||
-      clients[selectedUserId].engaged ||
-      clients[meId].userId === clients[selectedUserId].userId
-    ) {
-      // The selected user is not available to play
-      socket.emit("selectUserResponse", { success: false });
-      return;
-    }
-    // Update the engaged of both users to "engaged"
-    clients[meId].engaged = true;
-    clients[selectedUserId].engaged = true;
-    engageUser(meId, selectedUserId);
-    // console.log("users engaged");
-    // console.log(engagedPairs);
-
-    // create room and add the two users -- get the engaged pairs to join a room together
-    let roomId = meId + selectedUserId;
-    clients[meId].room = roomId;
-    clients[meId].playerNumber = 1;
-    clients[selectedUserId].room = roomId;
-    clients[selectedUserId].playerNumber = 2;
-    // Get the socket associated with the user id
-    const userSocket = userSockets.get(selectedUserId);
-    // Join a private room with the selectedUserId and meId
-    socket.join(roomId);
-    userSocket.join(roomId);
-    io.emit("selectUserResponse", {
-      me: clients[meId],
-      selectedUser: clients[selectedUserId],
-      success: true,
-    });
-  });
-
-  // Handle private chat messages
-  socket.on("privateMessage", ({ sender, message }) => {
-    // Send the message to the recipient only
-    io.to(clients[sender].room).emit("privateMessage", {
-      senderName: clients[sender].username,
-      senderId: clients[sender].userId,
-      message,
-    });
-  });
-
-  // Handle player moves
-  socket.on("playerMove", ({ sender, blockId }) => {
-    // Send the move to the recipients only
-    io.to(clients[sender].room).emit("playerMove", {
-      senderName: clients[sender].username,
-      senderId: clients[sender].userId,
-      playerNumber: clients[sender].playerNumber,
-      blockId,
-    });
-  });
-
-  // Set current player
-  socket.on("currentPlayer", ({ playerId }) => {
-    // Send the move to the recipients only
-    io.to(clients[playerId].room).emit("currentPlayer", {
-      playerUsername: clients[playerId].username,
-      playerId,
-    });
-  });
-
-  // Start new game
-  socket.on("newGame", ({ playerId, currentGridSize }) => {
-    // Send the move to the recipients only
-    io.to(clients[playerId].room).emit("newGame", {
-      currentGridSize,
-    });
-    io.to(clients[playerId].room).emit("currentPlayer", {
-      playerUsername: clients[playerId].username,
-      playerId,
-    });
-  });
-});
+};
 
 httpServer.listen(process.env.SERVER_PORT, () => {
   console.log(`Server started on port ${process.env.SERVER_PORT}`);

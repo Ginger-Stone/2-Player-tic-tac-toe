@@ -1,10 +1,16 @@
 [build]
+  publish = "."
   functions = "functions/"
+
+[functions]
+  [functions.server]
+    server = "functions/server.js"
+    handler = "server.handler"
 
 [[redirects]]
   from = "/socket.io/*"
-  to = "/functions/server"
+  to = "/.netlify/functions/server"
 
 [[redirects]]
   from = "/socket.io"
-  to = "/functions/server"
+  to = "/.netlify/functions/server"

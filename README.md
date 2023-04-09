@@ -2,6 +2,17 @@
 
 The tic tac toe and chat is a 2 player game that allows players to chat while they engage in the game. It's one of my "Fun games for meetings and conferences" games. Have fun and feel free to contribute to it. Cheers🍻
 
+## Contributing
+
+Pull requests are welcome. For major changes, please open an issue first
+to discuss what you would like to change.
+
+Please make sure to update tests as appropriate.
+
+## License
+
+[MIT](https://github.com/Ginger-Stone/2-Player-tic-tac-toe/blob/main/LICENSE)
+
 ## TODO: A list of tasks to be completed in the project
 
 - [x] Evaluate game function should return the positions of the array filled instead of symbols

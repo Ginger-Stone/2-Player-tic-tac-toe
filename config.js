@@ -1,13 +1,12 @@
 // REMEMBER to run -> browserify client.js -o client-bundle.js <- whenever changes are made to this file
 
-// prod
+// prod vs dev
 const environment = "prod"; //local or dev
-// dev
 const PORT = environment === "local" ? "3000" : "";
 const SERVER =
   environment === "local"
     ? "http://127.0.0.1"
-    : "https://tictactoeandchatserver.netlify.app";
+    : "https://tictactoeandchat.netlify.app";
 
 // console.log(process.env);
 console.log("SERVER: ", SERVER);
